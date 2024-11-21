@@ -18,6 +18,7 @@
 #include "decals/decalcontext.h"
 #include "graphics/environmentcontext.h"
 #include "dynui/imguicontext.h"
+#include "tbui/tbuicontext.h"
 #include "clustering/clustercontext.h"
 #include "posteffects/bloomcontext.h"
 #include "posteffects/ssaocontext.h"
@@ -146,6 +147,7 @@ SimpleViewerApplication::Open()
         CameraContext::SetLODCamera(this->cam);
 
         Dynui::ImguiContext::Create();
+        TBUI::TBUIContext::Create();
 
         Terrain::TerrainSetupSettings terSettings{
             .minHeight = 0, .maxHeight = 1024.0f,      // min/max height 
@@ -291,6 +293,7 @@ void
 SimpleViewerApplication::Close()
 {
     Physics::ShutDown();
+    TBUI::TBUIContext::Discard();
     Dynui::ImguiContext::Discard();
     Im3d::Im3dContext::Discard();
     Jobs2::JobSystemUninit();
