@@ -130,6 +130,18 @@ TBUIContext::Create()
             font->RenderGlyphs(" !\"#$%&'()*+,-./"
                                "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ï∑Â‰ˆ≈ƒ÷");
 
+        
+
+            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
+                [](const CoreGraphics::PassId pass, uint subpass)
+                {
+                    CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
+                    if (pipeline != CoreGraphics::InvalidPipelineId)
+                        CoreGraphics::DestroyGraphicsPipeline(pipeline);
+                    pipeline = CoreGraphics::CreateGraphicsPipeline({shaderProgram, pass, subpass, inputAssembly});
+                }
+            );
+
         FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
             [](const CoreGraphics::CmdBufferId cmdBuf,
                const Math::rectangle<int>& viewport,
@@ -211,7 +223,7 @@ TBUIContext::Render(
     }
     const Util::Array<TBUIBatch>& batches = renderer->EndBatch();
 
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
+    //CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
     CoreGraphics::CmdSetVertexLayout(cmdBuf, vertexLayout);
     CoreGraphics::CmdSetResourceTable(cmdBuf, resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
     CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);

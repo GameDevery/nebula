@@ -34,7 +34,7 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
-int currentScene = TerrainSceneId;
+int currentScene = ExampleSceneId;
 
 namespace Tests
 {
@@ -127,15 +127,18 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
-        Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
+        //Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
+        this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
         gfxServer->SetCurrentView(this->view);
         this->stage = gfxServer->CreateStage("stage1", true);
+
+        FrameScript_default::Initialize(width, height);
 
         // Create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
         Characters::CharacterContext::Create();
-        Particles::ParticleContext::Create();
+        //Particles::ParticleContext::Create();
 
         // Setup visibility related contexts
         // The order is important, ObserverContext is dependent on any bounding box and renderable modifying code
@@ -149,6 +152,7 @@ SimpleViewerApplication::Open()
         Dynui::ImguiContext::Create();
         TBUI::TBUIContext::Create();
 
+        /*
         Terrain::TerrainSetupSettings terSettings{
             .minHeight = 0, .maxHeight = 1024.0f,      // min/max height 
             //0, 0,
@@ -157,6 +161,7 @@ SimpleViewerApplication::Open()
             .quadsPerTileX = 16, .quadsPerTileY = 16        // 1 vertex every X meters
         };
         Terrain::TerrainContext::Create(terSettings);
+        */
 
         // setup vegetation
         //Vegetation::VegetationSetupSettings vegSettings{
@@ -166,32 +171,32 @@ SimpleViewerApplication::Open()
         //Vegetation::VegetationContext::Create(vegSettings);
 
         Clustering::ClusterContext::Create(0.1f, 10000.0f, this->wnd);
-        Lighting::LightContext::Create();
-        Decals::DecalContext::Create();
-        Im3d::Im3dContext::Create();
-        Fog::VolumetricFogContext::Create();
-        PostEffects::BloomContext::Create();
-        PostEffects::SSAOContext::Create();
-        PostEffects::HistogramContext::Create();
-        PostEffects::DownsamplingContext::Create();
+        //Lighting::LightContext::Create();
+        //Decals::DecalContext::Create();
+        //Im3d::Im3dContext::Create();
+        //Fog::VolumetricFogContext::Create();
+        //PostEffects::BloomContext::Create();
+        //PostEffects::SSAOContext::Create();
+        //PostEffects::HistogramContext::Create();
+        //PostEffects::DownsamplingContext::Create();
         //PostEffects::SSRContext::Create();
 
         // setup gbuffer bindings after frame script is loaded
-        Graphics::SetupBufferConstants();
-        PostEffects::BloomContext::Setup();
-        PostEffects::SSAOContext::Setup();
+        //Graphics::SetupBufferConstants();
+//        PostEffects::BloomContext::Setup();
+        //PostEffects::SSAOContext::Setup();
         //PostEffects::SSRContext::Setup(frameScript);
-        PostEffects::DownsamplingContext::Setup();
-        PostEffects::HistogramContext::Setup();
-        PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
+        //PostEffects::DownsamplingContext::Setup();
+//        PostEffects::HistogramContext::Setup();
+        //PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 
-        Im3d::Im3dContext::SetGridStatus(this->showGrid);
-        Im3d::Im3dContext::SetGridSize(1.0f, 25);
-        Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
+        //Im3d::Im3dContext::SetGridStatus(this->showGrid);
+        //Im3d::Im3dContext::SetGridSize(1.0f, 25);
+        //Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
         this->globalLight = Graphics::CreateEntity();
-        Lighting::LightContext::RegisterEntity(this->globalLight);
-        Lighting::LightContext::SetupGlobalLight(
+        //Lighting::LightContext::RegisterEntity(this->globalLight);
+        /* Lighting::LightContext::SetupGlobalLight(
             this->globalLight,
             Math::vec3(1, 1, 1),
             10.0f,
@@ -201,7 +206,7 @@ SimpleViewerApplication::Open()
             60_rad,
             0_rad,
             true
-        );
+        );*/
 
         this->ResetCamera();
         CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -215,8 +220,8 @@ SimpleViewerApplication::Open()
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
         // create environment context for the atmosphere effects
-        EnvironmentContext::Create(this->globalLight);
-        Terrain::TerrainContext::SetSun(this->globalLight);
+        //EnvironmentContext::Create(this->globalLight);
+        //Terrain::TerrainContext::SetSun(this->globalLight);
 
         this->UpdateCamera();
 
@@ -230,24 +235,24 @@ SimpleViewerApplication::Open()
             CameraContext::UpdateCameras,
             ModelContext::UpdateTransforms,
             Characters::CharacterContext::UpdateAnimations,
-            Fog::VolumetricFogContext::RenderUI,
-            EnvironmentContext::OnBeforeFrame,
-            EnvironmentContext::RenderUI,
-            Particles::ParticleContext::UpdateParticles,
-            Terrain::TerrainContext::RenderUI
+            //Fog::VolumetricFogContext::RenderUI,
+            //EnvironmentContext::OnBeforeFrame,
+            //EnvironmentContext::RenderUI,
+            //Particles::ParticleContext::UpdateParticles,
+            //Terrain::TerrainContext::RenderUI
         };
 
         Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
         {
-            Lighting::LightContext::OnPrepareView,
-            Particles::ParticleContext::OnPrepareView,
-            Im3d::Im3dContext::OnPrepareView,
-            PostEffects::SSAOContext::UpdateViewDependentResources,
-            PostEffects::HistogramContext::UpdateViewResources,
-            Decals::DecalContext::UpdateViewDependentResources,
-            Fog::VolumetricFogContext::UpdateViewDependentResources,
-            Lighting::LightContext::UpdateViewDependentResources,
-            Terrain::TerrainContext::CullPatches
+            //Lighting::LightContext::OnPrepareView,
+            //Particles::ParticleContext::OnPrepareView,
+            //Im3d::Im3dContext::OnPrepareView,
+            //PostEffects::SSAOContext::UpdateViewDependentResources,
+            //PostEffects::HistogramContext::UpdateViewResources,
+            //Decals::DecalContext::UpdateViewDependentResources,
+            //Fog::VolumetricFogContext::UpdateViewDependentResources,
+            //Lighting::LightContext::UpdateViewDependentResources,
+            //Terrain::TerrainContext::CullPatches
         };
 
         Util::Array<Graphics::ViewIndependentCall> postLogicCalls = 
@@ -259,14 +264,14 @@ SimpleViewerApplication::Open()
             // At the very latest point, wait for work to finish
             ModelContext::WaitForWork,
             Characters::CharacterContext::WaitForCharacterJobs,
-            Particles::ParticleContext::WaitForParticleUpdates,
+            //Particles::ParticleContext::WaitForParticleUpdates,
             ObserverContext::WaitForVisibility,
         };
 
         Util::Array<Graphics::ViewDependentCall> postLogicViewCalls = 
         {
 
-            Terrain::TerrainContext::UpdateLOD,
+            //Terrain::TerrainContext::UpdateLOD,
             //Vegetation::VegetationContext::UpdateViewResources
         };
 
@@ -295,16 +300,16 @@ SimpleViewerApplication::Close()
     Physics::ShutDown();
     TBUI::TBUIContext::Discard();
     Dynui::ImguiContext::Discard();
-    Im3d::Im3dContext::Discard();
+    //Im3d::Im3dContext::Discard();
     Jobs2::JobSystemUninit();
     App::Application::Close();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
     ObserverContext::Discard();
-    Lighting::LightContext::Discard();
-    Decals::DecalContext::Discard();
-    Fog::VolumetricFogContext::Discard();
+    //Lighting::LightContext::Discard();
+    //Decals::DecalContext::Discard();
+    //Fog::VolumetricFogContext::Discard();
 
     this->gfxServer->Close();
     this->inputServer->Close();
@@ -354,8 +359,8 @@ SimpleViewerApplication::Run()
             || this->cameraMode == 1)
             this->UpdateCamera();
 
-        if (keyboard->KeyPressed(Input::Key::F8))
-            Terrain::TerrainContext::ClearCache();
+        //if (keyboard->KeyPressed(Input::Key::F8))
+        //    Terrain::TerrainContext::ClearCache();
 
         if (keyboard->KeyDown(Input::Key::F3))
             this->profiler->TogglePause();
