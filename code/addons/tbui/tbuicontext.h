@@ -10,12 +10,12 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/shader.h"
-#include "backend/tbuirenderer.h"
 #include "tbuiinputhandler.h"
-#include "tbuiview.h"
 
 namespace TBUI
 {
+class TBUIRenderer;
+class TBUIView;
 
 class TBUIContext : public Graphics::GraphicsContext
 {

@@ -1,4 +1,5 @@
 #include "io/ioserver.h"
+#include "io/stream.h"
 #include "tbuifile.h"
 #include "tb/tb_system.h"
 
@@ -11,14 +12,7 @@ tb::TBFile::Open(const char* filename, TBFileMode mode)
     if (mode != TBFileMode::MODE_READ)
         return nullptr;
 
-    Util::String resolvedFilename(filename);
-
-    if (resolvedFilename.BeginsWithString("@TBUI"))
-    {
-        //resolvedFilename = ;???
-    }
-
-    TBUI::TBUIFile* file = new ::TBUI::TBUIFile(resolvedFilename);
+    TBUI::TBUIFile* file = new ::TBUI::TBUIFile(filename, IO::Stream::AccessMode::ReadAccess);
     if (!file->IsOpen())
     {
         file = nullptr;
@@ -30,10 +24,15 @@ tb::TBFile::Open(const char* filename, TBFileMode mode)
 
 namespace TBUI
 {
-TBUIFile::TBUIFile(const Util::String& filePath)
-    : fileStream()
+TBUIFile::TBUIFile(const Util::String& filePath, IO::Stream::AccessMode accessMode)
+    : fileStream(nullptr)
 {
     fileStream = IO::IoServer::Instance()->CreateStream(filePath).downcast<IO::FileStream>();
+    fileStream->SetAccessMode(accessMode);
+    if (!fileStream->Open())
+    {
+        fileStream = nullptr;
+    }
 }
 
 TBUIFile::~TBUIFile()

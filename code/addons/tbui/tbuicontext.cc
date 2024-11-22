@@ -6,15 +6,29 @@
 #include "math/mat4.h"
 #include "input/inputserver.h"
 #include "tbuicontext.h"
+#include "tbuiview.h"
 #include "backend/tbuibatch.h"
+#include "backend/tbuirenderer.h"
 #include "tb/tb_core.h"
 #include "tb/tb_language.h"
 #include "tb/tb_font_renderer.h"
 #include "tb/animation/tb_widget_animation.h"
 #include "frame/default.h"
+#include "io/assignregistry.h"
 
 namespace TBUI
 {
+TBUIRenderer* TBUIContext::renderer = nullptr;
+Ptr<TBUIInputHandler> TBUIContext::inputHandler;
+Util::Array<TBUIView*> TBUIContext::views;
+CoreGraphics::VertexLayoutId TBUIContext::vertexLayout;
+CoreGraphics::ShaderId TBUIContext::shader;
+CoreGraphics::ShaderProgramId TBUIContext::shaderProgram;
+CoreGraphics::ResourceTableId TBUIContext::resourceTable;
+CoreGraphics::PipelineId TBUIContext::pipeline;
+IndexT TBUIContext::textProjectionConstant;
+IndexT TBUIContext::textureConstant;
+
 
 __ImplementPluginContext(TBUIContext)
     //------------------------------------------------------------------------------
@@ -48,8 +62,10 @@ TBUIContext::Create()
             return;
         }
 
+        IO::AssignRegistry::Instance()->SetAssign(IO::Assign("tb", "root:work/turbobadger"));
+
         // allocate shader
-        shader = CoreGraphics::ShaderGet("shd:system_shaders/tbui.fxb");
+        shader = CoreGraphics::ShaderGet("shd:tbui.fxb");
         shaderProgram = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Static"));
         resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_BATCH_GROUP);
 
@@ -58,7 +74,7 @@ TBUIContext::Create()
 
         // create vertex buffer
         Util::Array<CoreGraphics::VertexComponent> components;
-        components.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float3, 0));
+        components.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0));
         components.Append(CoreGraphics::VertexComponent(1, CoreGraphics::VertexComponent::Float2, 0));
         components.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::UByte4N, 0));
         vertexLayout = CoreGraphics::CreateVertexLayout({.name = "TBUI Vertex Layout", .comps = components});
@@ -67,10 +83,10 @@ TBUIContext::Create()
         Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::Gui, inputHandler.upcast<Input::InputHandler>());
 
         // Load language file
-        tb::g_tb_lng->Load("@TBUI/resources/language/lng_en.tb.txt");
+        tb::g_tb_lng->Load("tb:resources/language/lng_en.tb.txt");
 
         // Load the default skin
-        tb::g_tb_skin->Load("@TBUI/resources/default_skin/skin.tb.txt", "@TBUI/demo/skin/skin.tb.txt");
+        tb::g_tb_skin->Load("tb:resources/default_skin/skin.tb.txt", "tb:demo/skin/skin.tb.txt");
 
         // Register font renderers.
 #ifdef TB_FONT_RENDERER_TBBF
@@ -89,10 +105,10 @@ TBUIContext::Create()
 
         // Add fonts we can use to the font manager.
 #if defined(TB_FONT_RENDERER_STB) || defined(TB_FONT_RENDERER_FREETYPE)
-        tb::g_font_manager->AddFontInfo("@TBUI/resources/vera.ttf", "Vera");
+        tb::g_font_manager->AddFontInfo("tb:resources/vera.ttf", "Vera");
 #endif
 #ifdef TB_FONT_RENDERER_TBBF
-        tb::g_font_manager->AddFontInfo("@TBUI/resources/default_font/segoe_white_with_shadow.tb.txt", "Segoe");
+        tb::g_font_manager->AddFontInfo("tb:resources/default_font/segoe_white_with_shadow.tb.txt", "Segoe");
 #endif
 
         // Set the default font description for widgets to one of the fonts we just added

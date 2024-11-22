@@ -98,9 +98,9 @@ GraphicsServer::Open()
         .numBufferedFrames = 3,
         .enableValidation = false,
         .features = {
-            .enableRayTracing = true,
-            .enableMeshShaders = true,
-            .enableVariableRateShading = true,
+            .enableRayTracing = false,
+            .enableMeshShaders = false,
+            .enableVariableRateShading = false,
 #if NEBULA_GRAPHICS_DEBUG
             .enableGPUCrashAnalytics = true
 #endif

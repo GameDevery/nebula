@@ -9,7 +9,7 @@ namespace TBUI
 class TBUIFile : public tb::TBFile
 {
 public:
-    TBUIFile(const Util::String& filepath);
+    TBUIFile(const Util::String& filepath, IO::Stream::AccessMode accessMode);
 
     ~TBUIFile();
 

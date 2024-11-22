@@ -10,7 +10,7 @@ target_include_directories(tbui
     ${CMAKE_CURRENT_SOURCE_DIR}/backend 
     ${CMAKE_CURRENT_SOURCE_DIR}/tb 
     ${CODE_ROOT}/resource 
-    ${CODE_ROOT}/render 
+    ${CODE_ROOT}/render
     ${CODE_ROOT}/foundation 
     ${Python_INCLUDE_DIRS}
 )
