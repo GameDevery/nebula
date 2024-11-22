@@ -10,6 +10,7 @@
 #include "visibility/visibilitycontext.h"
 #include "dynui/imguicontext.h"
 #include "staticui/staticuicontext.h"
+#include "tbui/tbuicontext.h"
 #include "characters/charactercontext.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "appgame/gameapplication.h"
@@ -157,6 +158,7 @@ GraphicsFeatureUnit::OnActivate()
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
     //StaticUI::StaticUIContext::Create();
+    TBUI::TBUIContext::Create();
 
     CameraContext::Create();
     ModelContext::Create();
@@ -171,7 +173,7 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    if (terrainSettings.config->use)
+    if (terrainSettings.config &&terrainSettings.config->use)
     {
         Terrain::TerrainSetupSettings settings {
             terrainSettings.config->min_height,
@@ -327,7 +329,7 @@ GraphicsFeatureUnit::OnActivate()
     {
     };
     
-    if (terrainSettings.config->use)
+    if (terrainSettings.config && terrainSettings.config->use)
     {
         preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
         preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);
@@ -367,6 +369,7 @@ GraphicsFeatureUnit::OnDeactivate()
 {
     Im3d::Im3dContext::Discard();
     Dynui::ImguiContext::Discard();
+    TBUI::TBUIContext::Discard();
     StaticUI::StaticUIContext::Discard();
     FeatureUnit::OnDeactivate();
     DestroyWindow(this->wnd);
