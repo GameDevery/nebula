@@ -41,3 +41,6 @@ imgui.ini
 .DS_Store
 .vs/nebula/v17
 .vs
+.cache
+compile_commands.json
+tmp
