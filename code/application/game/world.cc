@@ -93,63 +93,136 @@ World::PreloadLevel(Util::String const& path)
     Ptr<IO::BinaryReader> reader = IO::BinaryReader::Create();
     reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
     reader->SetMemoryMappingEnabled(true);
-    reader->Open();
+    if (!reader->Open())
+    {
+        n_warning("Could not open packed level '%s'\n", path.AsCharPtr());
+        delete level;
+        return nullptr;
+    }
 
     ubyte* data = reader->mapCursor;
+    SizeT const dataSize = reader->GetStream()->GetSize();
+    flatbuffers::Verifier verifier(data, dataSize);
+    if (!Game::Serialization::VerifyLevelBuffer(verifier))
+    {
+        n_warning("Packed level '%s' is not a valid NLVL file\n", path.AsCharPtr());
+        reader->Close();
+        delete level;
+        return nullptr;
+    }
 
     auto flatLevel = Game::Serialization::GetLevel(data);
     auto flatTables = flatLevel->tables();
-
-    Util::FixedArray<ComponentId> componentIds(flatLevel->component_descriptions()->size());
-    uint componentIndex = 0;
-    for (auto desc : *flatLevel->component_descriptions())
+    auto flatDescriptions = flatLevel->component_descriptions();
+    auto flatStrings = flatLevel->strings();
+    if (flatTables == nullptr || flatDescriptions == nullptr || flatStrings == nullptr)
     {
-        const char* componentName = desc->name()->c_str();
-        ComponentId cid = MemDb::AttributeRegistry::GetAttributeId(componentName);
-        componentIds[componentIndex++] = cid;
-
-#ifndef PUBLIC_BUILD
-        Game::ComponentInterface const* cInterface =
-            static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
-
-        // TODO: Validate all fields types as well and assert if incorrect!
-        n_assert(cInterface->GetNumFields() == desc->fields()->size());
-#endif
+        n_warning("Packed level '%s' is missing required data\n", path.AsCharPtr());
+        reader->Close();
+        delete level;
+        return nullptr;
     }
 
-    Util::FixedArray<Util::StringAtom> strings(flatLevel->strings()->size());
-
-    for (uint32_t i = 0; i < flatLevel->strings()->size(); i++)
+    Util::FixedArray<ComponentId> componentIds(flatDescriptions->size());
+    uint componentIndex = 0;
+    for (auto desc : *flatDescriptions)
     {
-        Util::StringAtom strAtm = (*flatLevel->strings())[i]->data();
+        if (desc == nullptr || desc->name() == nullptr || desc->fields() == nullptr)
+        {
+            n_warning("Packed level '%s' contains an invalid component description\n", path.AsCharPtr());
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
+        const char* componentName = desc->name()->c_str();
+        ComponentId cid = MemDb::AttributeRegistry::GetAttributeId(componentName);
+        Game::ComponentInterface const* cInterface = cid != ComponentId::Invalid()
+            ? static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid))
+            : nullptr;
+        if (cInterface == nullptr || cInterface->typeSize != desc->size() || cInterface->GetNumFields() != desc->fields()->size())
+        {
+            n_warning("Packed level '%s' has an unknown or incompatible component '%s'\n", path.AsCharPtr(), componentName);
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
+        for (IndexT fieldIndex = 0; fieldIndex < cInterface->GetNumFields(); fieldIndex++)
+        {
+            if (Util::String::StrCmp(cInterface->GetFieldNames()[fieldIndex], (*desc->fields())[fieldIndex]->name()->c_str()) != 0)
+            {
+                n_warning("Packed level '%s' has an incompatible field layout for component '%s'\n", path.AsCharPtr(), componentName);
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
+        }
+        componentIds[componentIndex++] = cid;
+    }
+
+    Util::FixedArray<Util::StringAtom> strings(flatStrings->size());
+
+    for (uint32_t i = 0; i < flatStrings->size(); i++)
+    {
+        Util::StringAtom strAtm = (*flatStrings)[i]->data();
         strings[i] = strAtm;
     }
 
     for (auto table : *flatTables)
     {
+        if (table == nullptr || table->components() == nullptr || table->columns() == nullptr)
+        {
+            n_warning("Packed level '%s' contains an invalid entity group\n", path.AsCharPtr());
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
         Game::PackedLevel::EntityGroup entityGroup;
 
         size_t const numTableComponents = table->components()->size();
+        if (numTableComponents == 0 || table->columns()->size() != numTableComponents || table->num_rows() == 0)
+        {
+            n_warning("Packed level '%s' contains an invalid entity group\n", path.AsCharPtr());
+            reader->Close();
+            delete level;
+            return nullptr;
+        }
         Util::FixedArray<ComponentId> components((SizeT)numTableComponents);
         componentIndex = 0;
         for (auto c : *table->components())
         {
+            if (c >= componentIds.Size())
+            {
+                n_warning("Packed level '%s' contains an invalid component index\n", path.AsCharPtr());
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
             ComponentId cid = componentIds[c];
             components[componentIndex++] = cid;
         }
-        MemDb::TableId const tableId = this->CreateEntityTable({.name = "", .components = components});
-        entityGroup.dstTable = tableId;
         entityGroup.numRows = table->num_rows();
 
-        n_assert(entityGroup.numRows > 0);
-
         size_t bytesInWholeTable = 0;
-        for (auto column : *table->columns())
+        for (IndexT columnIndex = 0; columnIndex < table->columns()->size(); columnIndex++)
         {
+            auto column = (*table->columns())[columnIndex];
+            if (column == nullptr || column->bytes() == nullptr)
+            {
+                n_warning("Packed level '%s' contains an invalid column\n", path.AsCharPtr());
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
+            SizeT const expectedSize = entityGroup.numRows * MemDb::AttributeRegistry::TypeSize(components[columnIndex]);
+            if (column->bytes()->size() != expectedSize)
+            {
+                n_warning("Packed level '%s' contains an invalid column size\n", path.AsCharPtr());
+                reader->Close();
+                delete level;
+                return nullptr;
+            }
             bytesInWholeTable += column->bytes()->size();
         }
-
-        n_assert(bytesInWholeTable > 0);
 
         entityGroup.columns = new byte[bytesInWholeTable];
 
@@ -189,15 +262,33 @@ World::PreloadLevel(Util::String const& path)
 
                         Util::StringAtom* asStringAtom = reinterpret_cast<Util::StringAtom*>(it);
                         uint64_t asInt = *reinterpret_cast<uint64_t*>(it);
-
+                        if (asInt >= strings.Size())
+                        {
+                            n_warning("Packed level '%s' contains an invalid string index\n", path.AsCharPtr());
+                            delete[] entityGroup.columns;
+                            entityGroup.columns = nullptr;
+                            reader->Close();
+                            delete level;
+                            return nullptr;
+                        }
                         *asStringAtom = strings[asInt];
 
+                        it += cInterface->typeSize;
+                    }
+                }
+                else if (component_field->feature() == Game::Serialization::ComponentFieldFeature_EntityId)
+                {
+                    ubyte* it = entityGroup.columns + offset + cInterface->GetFieldByteOffsets()[i];
+                    while (it < entityGroup.columns + offset + bytesInColumn)
+                    {
+                        *reinterpret_cast<Game::Entity*>(it) = Game::Entity::Invalid();
                         it += cInterface->typeSize;
                     }
                 }
             }
             offset += (*table->columns())[componentIndex]->bytes()->size();
         }
+        entityGroup.dstTable = this->CreateEntityTable({.name = "", .components = components});
         level->tables.Append(std::move(entityGroup));
     }
 
@@ -218,7 +309,7 @@ World::UnloadLevel(PackedLevel* level)
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 World::ExportLevel(Util::String const& path)
 {
     using namespace Game::Serialization;
@@ -382,13 +473,24 @@ World::ExportLevel(Util::String const& path)
 
     auto flat_level = CreateLevel(builder, vector_descs, vector_entity_groups, vector_strings);
 
-    builder.Finish(flat_level);
+    FinishLevelBuffer(builder, flat_level);
+
+    if (!IO::IoServer::Instance()->EnsureDirectoriesForFile(path))
+    {
+        n_warning("Could not create output directory for packed level '%s'\n", path.AsCharPtr());
+        return false;
+    }
 
     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
     writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
-    writer->Open();
+    if (!writer->Open())
+    {
+        n_warning("Could not open packed level '%s' for writing\n", path.AsCharPtr());
+        return false;
+    }
     writer->WriteRawData(builder.GetBufferPointer(), builder.GetSize());
     writer->Close();
+    return true;
 }
 
 //------------------------------------------------------------------------------

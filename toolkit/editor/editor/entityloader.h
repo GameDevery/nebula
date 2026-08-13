@@ -22,6 +22,9 @@ public:
     EntityLoader();
     ~EntityLoader();
 
+    /// Generate new persistent GUIDs instead of retaining GUIDs from the source level.
+    void SetGenerateGuids(bool generate);
+
 private:
     /// called at beginning of load
     virtual void BeginLoad() override;
@@ -33,6 +36,8 @@ private:
     virtual void CommitEntity(Game::Entity entity) override;
     /// parsing done
     virtual void CommitLevel() override;
+
+    bool generateGuids = false;
 };
 
 } // namespace Edit

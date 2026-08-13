@@ -15,6 +15,9 @@
 #include "imgui.h"
 #include "util/random.h"
 #include "commandmanager.h"
+#include "entityloader.h"
+#include "io/jsonreader.h"
+#include "io/ioserver.h"
 
 #include "editor/components/editorcomponents.h"
 #include "tools/pathconverter.h"
@@ -160,5 +163,74 @@ StopGame()
     gameTimeSource->timeFactor = 0.0f;
 }
 
-} // namespace Editor
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+LoadLevel(const Util::String& path, bool instantiate)
+{
+    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    if (!reader->Open() || !reader->HasNode("/level"))
+    {
+        n_warning("Could not open JSON level '%s'\n", path.AsCharPtr());
+        if (reader->IsOpen())
+            reader->Close();
+        return false;
+    }
 
+    Ptr<Editor::EntityLoader> loader = Editor::EntityLoader::Create();
+    loader->SetWorld(Editor::state.editorWorld);
+    loader->SetGenerateGuids(instantiate);
+    loader->LoadJsonLevel(reader);
+    reader->Close();
+
+    if (!instantiate)
+    {
+        Editor::state.levelPath = path;
+        Edit::CommandManager::SetClean();
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+SaveLevel()
+{
+    if (!Editor::state.levelPath.IsValid())
+    {
+        return false;
+    }
+    if (Editor::SaveEntities(Editor::state.levelPath.AsCharPtr()))
+    {
+        Edit::CommandManager::SetClean();
+        return true;
+    }
+    n_warning("Could not save JSON level '%s'\n", Editor::state.levelPath.AsCharPtr());
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+SaveLevelAs(const Util::String& path)
+{
+    Util::String levelPath = path;
+    if (levelPath.GetFileExtension() != "json")
+    {
+        levelPath.Append(".json");
+    }
+    if (Editor::SaveEntities(levelPath.AsCharPtr()))
+    {
+        Editor::state.levelPath = levelPath;
+        Edit::CommandManager::SetClean();
+        return true;
+    }
+    n_warning("Could not save JSON level '%s'\n", levelPath.AsCharPtr());
+    return false;
+}
+
+} // namespace Editor

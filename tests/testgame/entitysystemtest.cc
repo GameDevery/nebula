@@ -7,6 +7,7 @@
 #include "timing/timer.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
+#include "basegamefeature/level.h"
 #include "framesync/framesynctimer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
@@ -19,6 +20,7 @@
 
 #include "io/textreader.h"
 #include "io/filestream.h"
+#include "io/ioserver.h"
 
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
@@ -436,6 +438,33 @@ EntitySystemTest::Run()
     Game::ProcessorBuilder(world, "TestUpdateFuncAsync").Func(updateFuncAsync).Async().Build();
     
     StepFrame();
+
+    // Packed levels can be instantiated repeatedly and unloading only releases packed source data.
+    Util::String const packedLevelPath = "temp:levels/entitysystemtest.nlvl";
+    Game::World sourceWorld(Game::WorldHash('LSRC'), 7);
+    Game::Entity sourceEntity = sourceWorld.CreateEntity(true);
+    TestHealth* sourceHealth = sourceWorld.AddComponent<TestHealth>(sourceEntity);
+    sourceHealth->value = 123;
+    sourceWorld.ExecuteAddComponentCommands();
+    VERIFY(sourceWorld.ExportLevel(packedLevelPath));
+
+    Game::World destinationWorld(Game::WorldHash('LDST'), 8);
+    Game::PackedLevel* packedLevel = destinationWorld.PreloadLevel(packedLevelPath);
+    VERIFY(packedLevel != nullptr);
+    if (packedLevel != nullptr)
+    {
+        Util::Array<Game::Entity> firstInstance = packedLevel->Instantiate();
+        Util::Array<Game::Entity> secondInstance = packedLevel->Instantiate();
+        VERIFY(firstInstance.Size() == 1);
+        VERIFY(secondInstance.Size() == 1);
+        VERIFY(destinationWorld.GetComponent<TestHealth>(firstInstance[0]).value == 123);
+        VERIFY(destinationWorld.GetComponent<TestHealth>(secondInstance[0]).value == 123);
+
+        destinationWorld.UnloadLevel(packedLevel);
+        VERIFY(destinationWorld.IsValid(firstInstance[0]));
+        VERIFY(destinationWorld.IsValid(secondInstance[0]));
+    }
+    IO::IoServer::Instance()->DeleteFile(packedLevelPath);
 
     t->StopTime();
 }

@@ -150,7 +150,7 @@ public:
     /// unload a preloaded level
     void UnloadLevel(PackedLevel* level);
     /// Export the world as a level
-    void ExportLevel(Util::String const& path);
+    bool ExportLevel(Util::String const& path);
 
     /// Get the frame pipeline
     FramePipeline& GetFramePipeline();

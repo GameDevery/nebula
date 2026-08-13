@@ -42,6 +42,8 @@ struct State
     Game::World* editorWorld;
     /// maps from editor entity index to editable
     Util::Array<Editable> editables;
+    /// path to the currently loaded level source
+    Util::String levelPath;
 };
 
 /// Create the editor
@@ -61,6 +63,13 @@ void PauseGame();
 
 /// Stop the game
 void StopGame();
+
+/// Load a JSON level into the editor. Instantiated levels get fresh GUIDs and do not become the active level.
+bool LoadLevel(const Util::String& path, bool instantiate = false);
+/// Save the active JSON level.
+bool SaveLevel();
+/// Save the JSON level to a new path and make it active.
+bool SaveLevelAs(const Util::String& path);
 
 /// global editor state
 extern State state;

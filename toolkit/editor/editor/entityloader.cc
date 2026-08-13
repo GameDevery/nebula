@@ -42,6 +42,11 @@ bool
 SaveEntities(const char* filePath)
 {
     IO::URI const file = filePath;
+    if (!IO::IoServer::Instance()->EnsureDirectoriesForFile(file))
+    {
+        n_warning("Could not create directory for JSON level '%s'\n", filePath);
+        return false;
+    }
     Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
     writer->SetStream(IO::IoServer::Instance()->CreateStream(file));
 
@@ -90,7 +95,7 @@ SaveEntities(const char* filePath)
                     for (auto component : table.GetAttributes())
                     {
                         uint32_t const flags = MemDb::AttributeRegistry::Flags(component);
-                        if (component != entityPID)
+                        if (component != entityPID && (flags & Game::ComponentFlags::COMPONENTFLAG_DECAY) == 0)
                         {
                             SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                             if (typeSize > 0)
@@ -123,9 +128,12 @@ SaveEntities(const char* filePath)
 
         writer->End(); // end entities
         writer->End(); // end level
+        writer->Close();
+        Game::ComponentSerialization::OverrideType(Game::ComponentSerialization::ENTITY, nullptr, nullptr);
         return true;
     }
 
+    Game::ComponentSerialization::OverrideType(Game::ComponentSerialization::ENTITY, nullptr, nullptr);
     return false;
 }
 
@@ -149,6 +157,15 @@ EntityLoader::~EntityLoader()
 /**
 */
 void
+EntityLoader::SetGenerateGuids(bool generate)
+{
+    this->generateGuids = generate;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 EntityLoader::BeginLoad()
 {
     Edit::CommandManager::BeginMacro("Load entities", false);
@@ -160,7 +177,7 @@ EntityLoader::BeginLoad()
 void
 EntityLoader::AddEntity(Game::Entity entity, Util::Guid const& guid)
 {
-    if (Editor::state.editables.Size() >= entity.index)
+    while (Editor::state.editables.Size() <= entity.index)
         Editor::state.editables.Append({});
 
     // TODO: We need to add entities with guids before actually encountering the
@@ -171,7 +188,14 @@ EntityLoader::AddEntity(Game::Entity entity, Util::Guid const& guid)
     
     n_assert(editable.gameEntity == Game::Entity::Invalid());
     
-    editable.guid = guid;
+    if (this->generateGuids)
+    {
+        editable.guid.Generate();
+    }
+    else
+    {
+        editable.guid = guid;
+    }
 
     editable.version++;
 }
