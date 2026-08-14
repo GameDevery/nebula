@@ -72,15 +72,6 @@ fips_begin_lib(toolkitutil)
                 skeletonbuildersaver.cc
                 skeletonbuildersaver.h
             )
-    IF(NOT N_MINIMAL_TOOLKIT)
-        #fips_dir(posteffect)
-        #   fips_files(
-        #       posteffectexporter.cc
-        #       posteffectexporter.h
-        #       posteffectparser.cc
-        #       posteffectparser.h
-        #   )
-    ENDIF()
     IF(FIPS_WINDOWS)
         SET(SRCSX_PL        
         directxtexconversionjob.cc

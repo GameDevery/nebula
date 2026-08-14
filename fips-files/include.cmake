@@ -27,6 +27,7 @@ option(N_SHADER_VALIDATION "Validate the shader output, slows down cimpilation t
 option(N_SHADER_DEBUG "Output textual version of shader binary code to binary output folder" OFF)
 option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
 option(N_SANITIZERS "Build with sanitizers (only supported on linux)" OFF)
+option(N_ENABLE_TBUI "Build the tbui addon and its test app" OFF)
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
     if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")
@@ -538,63 +539,12 @@ macro(add_material)
     endforeach()
 endmacro()
 
-macro(add_blueprint_intern)
-    foreach(bp ${ARGN})
-            get_filename_component(basename ${bp} NAME)
-            set(output ${EXPORT_DIR}/data/tables/${basename})
-            add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${bp} ${EXPORT_DIR}/data/tables/
-                MAIN_DEPENDENCY ${bp}
-                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Copying blueprint ${bp} to ${EXPORT_DIR}/data/tables"
-                VERBATIM
-                )
-            fips_files(${bp})
-            SOURCE_GROUP("res\\blueprints" FILES ${bp})
-        endforeach()
-endmacro()
-
-macro(add_blueprint)
-    set_nebula_export_dir()
-    foreach(bp ${ARGN})
-        add_blueprint_intern(${CMAKE_CURRENT_SOURCE_DIR}/${bp})
-    endforeach()
-endmacro()
-
 # minimal resolving for toolkit and proj assigns used in projectinfo
 function(resolve_assigns str resolved projdir)
     string(REPLACE "toolkit:" ${NROOT}/ out ${str})
     string(REPLACE "proj:" ${projdir}/ out2 ${out})
     set (${resolved} ${out2} PARENT_SCOPE)
 endfunction()
-
-macro(add_template_intern)
-    foreach(tp ${ARGN})
-        get_filename_component(basename ${tp} NAME)
-        get_filename_component(dir ${tp} DIRECTORY)
-        string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/data/tables/templates/" "" dir ${dir})
-        set(output ${EXPORT_DIR}/data/tables/templates/${dir}/${basename})
-        add_custom_command(OUTPUT ${output}
-            COMMAND ${CMAKE_COMMAND} -E copy ${tp} ${EXPORT_DIR}/data/tables/templates/${dir}/
-            MAIN_DEPENDENCY ${tp}
-            WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-            COMMENT "Copying template ${tp} to ${EXPORT_DIR}/data/tables/templates"
-            VERBATIM
-            )
-        fips_files(${tp})
-        SOURCE_GROUP("res\\templates\\${dir}" FILES ${tp})
-    endforeach()
-endmacro()
-
-macro(add_template_dir)
-    set_nebula_export_dir()
-    foreach(tpdir ${ARGN})
-        file(GLOB_RECURSE templates "${tpdir}/*.json")
-        foreach (tp ${templates})
-            add_template_intern(${tp})
-        endforeach()
-    endforeach()
-endmacro()
 
 include(JSONParser)
 
@@ -628,7 +578,12 @@ macro(set_nebula_export_dir)
         MESSAGE(WARNING "No projectinfo found in project folder, setting default export")
         set(EXPORT_DIR "${workdir}/export")
         set(WORK_DIR "${workdir}")
-        set(ADDON_LIST tbui)
+        set(ADDON_LIST "")
+    endif()
+    if(N_ENABLE_TBUI)
+        if(NOT tbui IN_LIST ADDON_LIST)
+            list(APPEND ADDON_LIST tbui)
+        endif()
     endif()
 endmacro()
 
@@ -696,15 +651,6 @@ macro(add_nebula_shaders)
             add_material_intern(${shd})
         endforeach()
     endif()
-endmacro()
-
-macro(nebula_add_blueprints)
-    set_nebula_export_dir()
-    if (EXISTS "${FIPS_PROJECT_DIR}/work/data/tables/blueprints.json")
-        add_blueprint_intern("${FIPS_PROJECT_DIR}/work/data/tables/blueprints.json")
-    else()
-        add_blueprint_intern("${NROOT}/syswork/data/tables/blueprints.json")
-    endif()    
 endmacro()
 
 macro(compile_gpulang)

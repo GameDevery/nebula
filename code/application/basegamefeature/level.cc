@@ -75,7 +75,10 @@ PackedLevel::Instantiate() const
 
                 entities.Append(entity);
                 // TODO: could initialize all components of a specific type at the same time
-                this->world->InitializeAllComponents(entity, mapping.table, mapping.instance);
+                if (this->world->componentInitializationEnabled)
+                {
+                    this->world->InitializeInstance(entity, mapping.table, mapping.instance);
+                }
             }
 
             partition->numRows += numRows;

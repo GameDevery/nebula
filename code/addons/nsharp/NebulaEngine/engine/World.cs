@@ -20,13 +20,11 @@ namespace Nebula
 
             private List<Entity> entities;
             
-            public Entity CreateEntity(string template)
+            public Entity CreateEntity()
             {
-                UInt64 id = Api.CreateEntity(this.id, template);
+                UInt64 id = Api.CreateEntity(this.id);
                 Entity entity = new Entity(this, id);
                 this.RegisterEntity(entity);
-
-                // TODO: Check what properties this entity should have, and add them to the entity.
                 return entity;
             }
             

@@ -6,15 +6,7 @@
 #include "toolbar.h"
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
-#include "editor/ui/uimanager.h"
 #include "editor/cmds.h"
-#include "editor/entityloader.h"
-#include "basegamefeature/managers/blueprintmanager.h"
-#include "io/filedialog.h"
-#include "io/ioserver.h"
-#include "basegamefeature/level.h"
-
-#include "editor/tools/selectiontool.h"
 
 using namespace Editor;
 
@@ -50,33 +42,6 @@ void
 Toolbar::Run(SaveMode save)
 {
     const ImVec2 buttonSize = {32,32};
-    
-    static const char* selected = "Empty";
-    ImGui::PushItemWidth(300);
-    if (ImGui::BeginCombo("##Template", selected))
-    {
-        auto const& templates = Game::BlueprintManager::ListTemplates();
-        for (auto const& tmpl : templates)
-        {
-            if (ImGui::Selectable(tmpl.name.Value(), selected == tmpl.name.Value()))
-                selected = tmpl.name.Value();
-        }
-        ImGui::EndCombo();
-    }
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (ImGui::Button("Create"))
-    {
-        if (selected != nullptr)
-        {
-            Edit::CommandManager::BeginMacro("Create entity", true);
-            Editor::Entity newEntity = Edit::CreateEntity(selected);
-            Edit::SetSelection({newEntity});
-            Edit::CommandManager::EndMacro();
-        }
-    }
-    
-    IMGUI_VERTICAL_SEPARATOR;
     
     //if (ImGui::ImageButton("playimage", &UIManager::Icons::play, buttonSize, {0,0}, {1,1})) { PlayGame(); }
     //ImGui::SameLine();

@@ -186,8 +186,17 @@ LevelParser::LoadComponents(const Ptr<IO::JsonReader>& reader, Game::Entity enti
                 continue;
             }
 
-            void* componentData = world->AddComponent(entity, componentId);
-            Game::ComponentSerialization::Deserialize(reader, componentId, componentData);
+            SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(componentId);
+            if (typeSize > 0)
+            {
+                Util::Blob componentData(MemDb::AttributeRegistry::DefaultValue(componentId), typeSize);
+                Game::ComponentSerialization::Deserialize(reader, componentId, componentData.GetPtr());
+                world->AddComponent(entity, componentId, componentData.GetPtr());
+            }
+            else
+            {
+                world->AddComponent(entity, componentId);
+            }
         }
 
         reader->SetToParent();

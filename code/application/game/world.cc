@@ -12,7 +12,6 @@
 #include "entitypool.h"
 #include "memory/arenaallocator.h"
 #include "ids/idallocator.h"
-#include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
 #include "game/componentinspection.h"
 #include "basegamefeature/components/basegamefeature.h"
@@ -685,38 +684,6 @@ World::CreateEntity(bool immediate)
 //------------------------------------------------------------------------------
 /**
 */
-Game::Entity
-World::CreateEntity(EntityCreateInfo const& info)
-{
-    World::AllocateInstanceCommand cmd;
-    if (info.templateId != TemplateId::Invalid())
-    {
-        cmd.tid = info.templateId;
-    }
-    else
-    {
-        n_warning("Trying to instantiate an invalid template!");
-        return Game::Entity::Invalid();
-    }
-    Entity const entity = this->AllocateEntityId();
-    cmd.entity = entity;
-
-    if (!info.immediate)
-    {
-        this->AllocateInstance(cmd.entity, cmd.tid, false);
-        this->allocQueue.Enqueue(std::move(cmd));
-    }
-    else
-    {
-        this->AllocateInstance(cmd.entity, cmd.tid, true);
-    }
-
-    return entity;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 World::DeleteEntity(Game::Entity entity)
 {
@@ -780,6 +747,15 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
 void*
 World::AddComponent(Entity entity, Game::ComponentId id)
 {
+    return this->AddComponent(entity, id, nullptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+World::AddComponent(Entity entity, Game::ComponentId id, const void* value)
+{
 #if NEBULA_DEBUG
     n_assert2(
         !this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!"
@@ -787,8 +763,8 @@ World::AddComponent(Entity entity, Game::ComponentId id)
 #endif
     SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(id);
     void* data = this->componentStageAllocator.Alloc(typeSize);
-    const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);
-    Memory::Copy(defaultValue, data, typeSize);
+    const void* initialValue = value != nullptr ? value : MemDb::AttributeRegistry::DefaultValue(id);
+    Memory::Copy(initialValue, data, typeSize);
 
     AddStagedComponentCommand cmd = {
         .entity = entity,
@@ -1212,6 +1188,15 @@ World::CreateEntityTable(EntityTableCreateInfo const& info)
 /**
 */
 MemDb::RowId
+World::AllocateInstance(Entity entity)
+{
+    return this->AllocateInstance(entity, this->defaultTableId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+MemDb::RowId
 World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data)
 {
     n_assert(this->IsValid(entity));
@@ -1245,8 +1230,6 @@ World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* c
     Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[instance.index] = entity;
 
-    InitializeAllComponents(entity, table, instance);
-
     return instance;
 }
 
@@ -1254,10 +1237,20 @@ World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* c
 /**
 */
 void
-World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row)
+World::InitializeInstance(Entity entity)
 {
-    if (!this->componentInitializationEnabled)
-        return;
+    EntityMapping const& mapping = this->entityMap[entity.index];
+    this->InitializeInstance(entity, mapping.table, mapping.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::InitializeInstance(Entity entity, MemDb::TableId tableId, MemDb::RowId row)
+{
+    n_assert(tableId != MemDb::InvalidTableId);
+    n_assert(row != MemDb::InvalidRow);
 
     n_assert(this->IsValid(entity));
 
@@ -1280,91 +1273,15 @@ World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::Row
 //------------------------------------------------------------------------------
 /**
 */
-MemDb::RowId
-World::AllocateInstance(Entity entity, BlueprintId blueprint)
-{
-    n_assert(this->IsValid(entity));
-    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
-
-    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
-    {
-        n_warning("Entity already registered!\n");
-        return MemDb::InvalidRow;
-    }
-
-    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(this, blueprint);
-    this->entityMap[entity.index] = mapping;
-
-#if _DEBUG
-    // make sure the first column in always owner
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) ==
-        Game::Entity::Traits::fixed_column_index
-    );
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) ==
-        Game::Position::Traits::fixed_column_index
-    );
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) ==
-        Game::Orientation::Traits::fixed_column_index
-    );
-    n_assert(
-        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) ==
-        Game::Scale::Traits::fixed_column_index
-    );
-#endif
-
-    // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table)
-                               .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
-    owners[mapping.instance.index] = entity;
-
-    InitializeAllComponents(entity, mapping.table, mapping.instance);
-
-    return mapping.instance;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-MemDb::RowId
-World::AllocateInstance(Entity entity, TemplateId templateId, bool performInitialize)
-{
-    n_assert(this->IsValid(entity));
-    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
-
-    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
-    {
-        n_warning("Entity instance already allocated!\n");
-        return MemDb::InvalidRow;
-    }
-
-    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(this, templateId);
-    this->entityMap[entity.index] = mapping;
-
-    // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table)
-                               .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
-    owners[mapping.instance.index] = entity;
-
-    if (performInitialize)
-    {
-        InitializeAllComponents(entity, mapping.table, mapping.instance);
-    }
-
-    return mapping.instance;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 World::FinalizeAllocate(Entity entity)
 {
     n_assert(this->IsValid(entity));
     EntityMapping& mapping = this->entityMap[entity.index];
-    InitializeAllComponents(entity, mapping.table, mapping.instance);
+    if (this->componentInitializationEnabled)
+    {
+        this->InitializeInstance(entity, mapping.table, mapping.instance);
+    }
 }
 //------------------------------------------------------------------------------
 /**
@@ -1817,7 +1734,6 @@ World::RenderDebug()
 void
 World::Override(World* src, World* dst)
 {
-    dst->blueprintToTableMap = src->blueprintToTableMap;
     dst->entityMap = src->entityMap;
     dst->numEntities = src->numEntities;
     dst->pool = src->pool;
@@ -1825,27 +1741,21 @@ World::Override(World* src, World* dst)
     dst->db = MemDb::Database::Create();
     src->db->Copy(dst->db);
 
-    if (src->componentInitializationEnabled == false && dst->componentInitializationEnabled)
+    Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
+    Game::Dataset data = dst->Query(filter);
+    for (int v = 0; v < data.numViews; v++)
     {
-        // Initialize all component if the source db haven't already.
-        Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
-        Game::Dataset data = dst->Query(filter);
-
-        for (int v = 0; v < data.numViews; v++)
+        Game::Dataset::View const& view = data.views[v];
+        Game::Entity* entities = (Game::Entity*)view.buffers[0];
+        for (uint16_t i = 0; i < view.numInstances; ++i)
         {
-            Game::Dataset::View const& view = data.views[v];
-            Game::Entity* entities = (Game::Entity*)view.buffers[0];
-
-            for (uint16_t i = 0; i < view.numInstances; ++i)
+            if (view.validInstances.IsSet(i))
             {
-                Game::Entity& entity = entities[i];
-                entity.world = dst->worldId;
-                MemDb::RowId row = {.partition = view.partitionId, .index = i};
-                dst->InitializeAllComponents(entity, view.tableId, row);
+                entities[i].world = dst->worldId;
             }
         }
-        Game::DestroyFilter(filter);
     }
+    Game::DestroyFilter(filter);
 
     dst->PrefilterProcessors();
 }

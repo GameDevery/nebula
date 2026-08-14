@@ -31,8 +31,8 @@ namespace Nebula
 
         public class NebulaApiV1 : INebulaApi
         {
-            [DllImport("__Internal", EntryPoint = "EntityCreateFromTemplate")]
-            public static extern UInt64 CreateEntity(uint worldId, string template);
+            [DllImport("__Internal", EntryPoint = "EntityCreate")]
+            public static extern UInt64 CreateEntity(uint worldId);
 
             [DllImport("__Internal", EntryPoint = "EntityIsValid")]
             public static extern bool IsValid(UInt64 entityId);
