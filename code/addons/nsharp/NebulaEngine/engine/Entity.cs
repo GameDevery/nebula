@@ -74,9 +74,15 @@ namespace Nebula
                 int size = Marshal.SizeOf<T>();
                 // HACK: there might be more efficient ways to avoid GC problems, if there are any...
                 IntPtr ptr = Marshal.AllocHGlobal(size);
-                Marshal.StructureToPtr(component, ptr, false);
-                Api.SetComponentData(this.id, componentId, ptr, size);
-                Marshal.FreeHGlobal(ptr);
+                try
+                {
+                    Marshal.StructureToPtr(component, ptr, false);
+                    Api.SetComponentData(this.id, componentId, ptr, size);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(ptr);
+                }
             }
 
             /// <summary>
@@ -90,10 +96,15 @@ namespace Nebula
                 uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 int size = Marshal.SizeOf<T>();
                 IntPtr ptr = Marshal.AllocHGlobal(size);
-                Api.GetComponentData(this.id, componentId, ptr, size);
-                T component = Marshal.PtrToStructure<T>(ptr);
-                Marshal.FreeHGlobal(ptr);
-                return component;
+                try
+                {
+                    Api.GetComponentData(this.id, componentId, ptr, size);
+                    return Marshal.PtrToStructure<T>(ptr);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(ptr);
+                }
             }
 
             /// <summary>

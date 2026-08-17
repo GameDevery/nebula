@@ -13,14 +13,21 @@ namespace Nebula
 {
     public class Debug
     {
-        [DllImport("__Internal", EntryPoint = "N_Print")]
-        public static extern void Log(string val);
+        [DllImport("__Internal", EntryPoint = "N_Print", CharSet = CharSet.Ansi)]
+        private static extern void Print(string val, int isStdout);
+
+        public static void Log(string val)
+        {
+            Print(val, 1);
+        }
 
         [DllImport("__Internal", EntryPoint = "N_Assert")]
-        public static extern void Assert(bool value);
+        public static extern void Assert([MarshalAs(UnmanagedType.I1)] bool value);
 
-        [DllImport("__Internal", EntryPoint = "N_Assert")]
-        public static extern void Assert(bool value, string message);
+        public static void Assert(bool value, string message)
+        {
+            Assert(value);
+        }
     }
 
     namespace Game
@@ -33,6 +40,7 @@ namespace Nebula
             public static extern UInt64 CreateEntity(uint worldId);
 
             [DllImport("__Internal", EntryPoint = "EntityIsValid")]
+            [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool IsValid(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
@@ -57,9 +65,11 @@ namespace Nebula
             public static extern void SetScale(UInt64 entityId, Vector3 position);
 
             [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
+            [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool HasComponent(UInt64 entityId, uint componentId);
 
-            [DllImport("__Internal", EntryPoint = "ComponentGetId")]
+            [DllImport("__Internal", EntryPoint = "ComponentGetId", CharSet = CharSet.Ansi)]
+            [return: MarshalAs(UnmanagedType.U4)]
             public static extern uint GetComponentId(string name);
 
             [DllImport("__Internal", EntryPoint = "ComponentGetData")]
