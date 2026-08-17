@@ -56,9 +56,9 @@ Game::Entity CreatePlayerEntity(Game::World* world)
 Game::Entity CreateEnemyEntity(Game::World* world)
 {
     Game::Entity entity = world->CreateEntity();
+    world->AddComponent<TestHealth>(entity);
     world->AddComponent<TestVec4>(entity);
     world->AddComponent<TestStruct>(entity);
-    world->AddComponent<TestEmptyStruct>(entity);
     return entity;
 }
 

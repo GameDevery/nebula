@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
 using System.Collections.Generic;
-using Mathf;
 
 using Api = Nebula.Game.NebulaApiV1;
 
@@ -26,6 +25,11 @@ namespace Nebula
                 Entity entity = new Entity(this, id);
                 this.RegisterEntity(entity);
                 return entity;
+            }
+
+            public Entity CreateEntity(string name)
+            {
+                return this.CreateEntity();
             }
             
             private void RegisterEntity(Entity entity)

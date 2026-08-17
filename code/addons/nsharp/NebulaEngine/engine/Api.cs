@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
 using System.Collections.Generic;
-using Mathf;
-
 
 /*
 Entities are only ids as per usual, pointing into their respective tables in unmanaged code

@@ -192,6 +192,8 @@ if(N_RENDERER_VULKAN)
 endif()
 
 option(USE_DOTNET "Build with .NET support" OFF)
+set(NEBULA_DOTNET_MAJOR_VERSION "8" CACHE STRING ".NET major version used by managed Nebula projects")
+set(NEBULA_DOTNET_SDK_VERSION "" CACHE STRING "Exact .NET SDK version; empty selects the latest installed SDK for the configured major version")
 
 IF (USE_DOTNET)
     cmake_policy(PUSH)
@@ -472,6 +474,73 @@ macro(nebula_idl_generate_cs_target)
         list(APPEND NIDL_Cs_Deps GenerateNIDL_${nidlName})
     endforeach()
 endmacro()
+
+function(nebula_dotnet_project)
+    cmake_parse_arguments(DOTNET_PROJECT "" "NAME;PROJECT_DIR;OUTPUT_DIR;RUNTIME_TEMPLATE" "SOURCES;GENERATED_SOURCES;DEPENDS;REFERENCES" ${ARGN})
+
+    if(NOT DOTNET_PROJECT_NAME OR NOT DOTNET_PROJECT_PROJECT_DIR OR NOT DOTNET_PROJECT_OUTPUT_DIR)
+        message(FATAL_ERROR "nebula_dotnet_project requires NAME, PROJECT_DIR, and OUTPUT_DIR")
+    endif()
+
+    set(project_file "${DOTNET_PROJECT_PROJECT_DIR}/${DOTNET_PROJECT_NAME}.csproj")
+    set(managed_target "${DOTNET_PROJECT_NAME}Managed")
+    file(MAKE_DIRECTORY "${DOTNET_PROJECT_PROJECT_DIR}")
+
+    if(DOTNET_PROJECT_RUNTIME_TEMPLATE)
+        configure_file(
+            "${DOTNET_PROJECT_RUNTIME_TEMPLATE}"
+            "${DOTNET_PROJECT_PROJECT_DIR}/runtimeconfig.template.json"
+            COPYONLY
+        )
+    endif()
+
+    set(compile_items "")
+    foreach(csfile IN LISTS DOTNET_PROJECT_SOURCES DOTNET_PROJECT_GENERATED_SOURCES)
+        string(APPEND compile_items "        <Compile Include=\"${csfile}\" />\n")
+    endforeach()
+
+    set(project_references "")
+    foreach(reference IN LISTS DOTNET_PROJECT_REFERENCES)
+        string(APPEND project_references "    <ProjectReference Include=\"${reference}\" />\n")
+    endforeach()
+
+    file(GENERATE OUTPUT "${project_file}" CONTENT
+"<Project Sdk=\"Microsoft.NET.Sdk\">\n\
+  <PropertyGroup>\n\
+    <TargetFramework>net${NEBULA_DOTNET_MAJOR_VERSION}.0</TargetFramework>\n\
+    <AssemblyName>${DOTNET_PROJECT_NAME}</AssemblyName>\n\
+    <OutputPath>${DOTNET_PROJECT_OUTPUT_DIR}/</OutputPath>\n\
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>\n\
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>\n\
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>\n\
+    <LangVersion>7.2</LangVersion>\n\
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n\
+  </PropertyGroup>\n\
+  <ItemGroup>\n\
+${compile_items}  </ItemGroup>\n\
+  <ItemGroup>\n\
+${project_references}  </ItemGroup>\n\
+</Project>\n")
+
+    file(GENERATE OUTPUT "${DOTNET_PROJECT_PROJECT_DIR}/global.json" CONTENT
+"{\n\
+  \"sdk\": {\n\
+    \"version\": \"${DOTNET_SDK_VERSION}\",\n\
+    \"rollForward\": \"latestPatch\",\n\
+    \"allowPrerelease\": false\n\
+  }\n\
+}\n")
+
+    add_custom_target(${managed_target} ALL
+        COMMAND ${DOTNET_EXE} build "${project_file}" --configuration ${CMAKE_BUILD_TYPE} --nologo
+        DEPENDS ${DOTNET_PROJECT_DEPENDS}
+        WORKING_DIRECTORY "${DOTNET_PROJECT_PROJECT_DIR}"
+        VERBATIM
+    )
+
+    set(${DOTNET_PROJECT_NAME}_DOTNET_TARGET ${managed_target} CACHE INTERNAL "")
+    set(${DOTNET_PROJECT_NAME}_DOTNET_PROJECT ${project_file} CACHE INTERNAL "")
+endfunction()
 
 macro(add_addon)
     set_nebula_export_dir()
