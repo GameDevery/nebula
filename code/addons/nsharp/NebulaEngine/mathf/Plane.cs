@@ -6,27 +6,31 @@ using System;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
-namespace Mathf
+namespace Nebula
 {
 	internal class PlaneHelper
     {
-        /// <summary>
-        /// Returns a value indicating what side (positive/negative) of a plane a point is
-        /// </summary>
-        /// <param name="point">The point to check with</param>
-        /// <param name="plane">The plane to check against</param>
-        /// <returns>Greater than zero if on the positive side, less than zero if on the negative size, 0 otherwise</returns>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Returns a value indicating what side (positive/negative) of a plane a point is
+            </summary>
+            <param name="point">The point to check with</param>
+            <param name="plane">The plane to check against</param>
+            <returns>Greater than zero if on the positive side, less than zero if on the negative size, 0 otherwise</returns>
+        */
         public static float ClassifyPoint(ref Vector3 point, ref Plane plane)
         {
             return point.X * plane.Normal.X + point.Y * plane.Normal.Y + point.Z * plane.Normal.Z + plane.D;
         }
 
-        /// <summary>
-        /// Returns the perpendicular distance from a point to a plane
-        /// </summary>
-        /// <param name="point">The point to check</param>
-        /// <param name="plane">The place to check</param>
-        /// <returns>The perpendicular distance from the point to the plane</returns>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Returns the perpendicular distance from a point to a plane
+            </summary>
+            <param name="point">The point to check</param>
+            <param name="plane">The place to check</param>
+            <returns>The perpendicular distance from the point to the plane</returns>
+        */
         public static float PerpendicularDistance(ref Vector3 point, ref Plane plane)
         {
             // dist = (ax + by + cz + d) / sqrt(a*a + b*b + c*c)
@@ -80,11 +84,13 @@ namespace Mathf
 
         }
 
-        /// <summary>
-        /// Create a <see cref="Plane"/> that contains the specified point and has the specified <see cref="Normal"/> vector.
-        /// </summary>
-        /// <param name="pointOnPlane">A point the created <see cref="Plane"/> should contain.</param>
-        /// <param name="normal">The normal of the plane.</param>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Create a <see cref="Plane"/> that contains the specified point and has the specified <see cref="Normal"/> vector.
+            </summary>
+            <param name="pointOnPlane">A point the created <see cref="Plane"/> should contain.</param>
+            <param name="normal">The normal of the plane.</param>
+        */
         public Plane(Vector3 pointOnPlane, Vector3 normal)
         {
             Normal = normal;
@@ -130,12 +136,14 @@ namespace Mathf
             result = ((this.Normal.X * value.X) + (this.Normal.Y * value.Y)) + (this.Normal.Z * value.Z);
         }
 
-        /// <summary>
-        /// Transforms a normalized plane by a matrix.
-        /// </summary>
-        /// <param name="plane">The normalized plane to transform.</param>
-        /// <param name="matrix">The transformation matrix.</param>
-        /// <returns>The transformed plane.</returns>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Transforms a normalized plane by a matrix.
+            </summary>
+            <param name="plane">The normalized plane to transform.</param>
+            <param name="matrix">The transformation matrix.</param>
+            <returns>The transformed plane.</returns>
+        */
         public static Plane Transform(Plane plane, Matrix matrix)
         {
             Plane result;
@@ -143,12 +151,14 @@ namespace Mathf
             return result;
         }
 
-        /// <summary>
-        /// Transforms a normalized plane by a matrix.
-        /// </summary>
-        /// <param name="plane">The normalized plane to transform.</param>
-        /// <param name="matrix">The transformation matrix.</param>
-        /// <param name="result">The transformed plane.</param>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Transforms a normalized plane by a matrix.
+            </summary>
+            <param name="plane">The normalized plane to transform.</param>
+            <param name="matrix">The transformation matrix.</param>
+            <param name="result">The transformed plane.</param>
+        */
         public static void Transform(ref Plane plane, ref Matrix matrix, out Plane result)
         {
             // See "Transforming Normals" in http://www.glprogramming.com/red/appendixf.html
@@ -166,12 +176,14 @@ namespace Mathf
             result = new Plane(transformedVector);
         }
 
-        /// <summary>
-        /// Transforms a normalized plane by a quaternion rotation.
-        /// </summary>
-        /// <param name="plane">The normalized plane to transform.</param>
-        /// <param name="rotation">The quaternion rotation.</param>
-        /// <returns>The transformed plane.</returns>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Transforms a normalized plane by a quaternion rotation.
+            </summary>
+            <param name="plane">The normalized plane to transform.</param>
+            <param name="rotation">The quaternion rotation.</param>
+            <returns>The transformed plane.</returns>
+        */
         public static Plane Transform(Plane plane, Quaternion rotation)
         {
             Plane result;
@@ -179,12 +191,14 @@ namespace Mathf
             return result;
         }
 
-        /// <summary>
-        /// Transforms a normalized plane by a quaternion rotation.
-        /// </summary>
-        /// <param name="plane">The normalized plane to transform.</param>
-        /// <param name="rotation">The quaternion rotation.</param>
-        /// <param name="result">The transformed plane.</param>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Transforms a normalized plane by a quaternion rotation.
+            </summary>
+            <param name="plane">The normalized plane to transform.</param>
+            <param name="rotation">The quaternion rotation.</param>
+            <param name="result">The transformed plane.</param>
+        */
         public static void Transform(ref Plane plane, ref Quaternion rotation, out Plane result)
         {
             Vector3.Transform(ref plane.Normal, ref rotation, out result.Normal);
@@ -294,11 +308,13 @@ namespace Mathf
             return "{Normal:" + Normal + " D:" + D + "}";
         }
 
-        /// <summary>
-        /// Deconstruction method for <see cref="Plane"/>.
-        /// </summary>
-        /// <param name="normal"></param>
-        /// <param name="d"></param>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Deconstruction method for <see cref="Plane"/>.
+            </summary>
+            <param name="normal"></param>
+            <param name="d"></param>
+        */
         public void Deconstruct(out Vector3 normal, out float d)
         {
             normal = Normal;

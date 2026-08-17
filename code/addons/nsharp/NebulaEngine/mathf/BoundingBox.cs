@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
-namespace Mathf
+namespace Nebula
 {
     [DataContract]
     [DebuggerDisplay("{DebugDisplayString,nq}")]
@@ -230,12 +230,14 @@ namespace Mathf
         private static readonly Vector3 MaxVector3 = new Vector3(float.MaxValue);
         private static readonly Vector3 MinVector3 = new Vector3(float.MinValue);
 
-        /// <summary>
-        /// Create a bounding box from the given list of points.
-        /// </summary>
-        /// <param name="points">The list of Vector3 instances defining the point cloud to bound</param>
-        /// <returns>A bounding box that encapsulates the given point cloud.</returns>
-        /// <exception cref="System.ArgumentException">Thrown if the given list has no points.</exception>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Create a bounding box from the given list of points.
+            </summary>
+            <param name="points">The list of Vector3 instances defining the point cloud to bound</param>
+            <returns>A bounding box that encapsulates the given point cloud.</returns>
+            <exception cref="System.ArgumentException">Thrown if the given list has no points.</exception>
+        */
         public static BoundingBox CreateFromPoints(IEnumerable<Vector3> points)
         {
             if (points == null)
@@ -528,11 +530,13 @@ namespace Mathf
             return "{{Min:" + this.Min.ToString() + " Max:" + this.Max.ToString() + "}}";
         }
 
-        /// <summary>
-        /// Deconstruction method for <see cref="BoundingBox"/>.
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
+        //--------------------------------------------------------------------------
+        /** <summary>
+            Deconstruction method for <see cref="BoundingBox"/>.
+            </summary>
+            <param name="min"></param>
+            <param name="max"></param>
+        */
         public void Deconstruct(out Vector3 min, out Vector3 max)
         {
             min = Min;
