@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections;
@@ -13,12 +14,19 @@ namespace Nebula
 {
     public class Debug
     {
-        [DllImport("__Internal", EntryPoint = "N_Print", CharSet = CharSet.Ansi)]
-        private static extern void Print(string val, int isStdout);
+        [DllImport("__Internal", EntryPoint = "N_Print")]
+        private static extern void Print(IntPtr data, int isStdout);
 
-        public static void Log(string val)
+        public static unsafe void Log(string val)
         {
-            Print(val, 1);
+            int byteCount = Encoding.UTF8.GetByteCount(val);
+            Span<byte> buffer = stackalloc byte[byteCount + 1];
+            byteCount = Encoding.UTF8.GetBytes(val.AsSpan(), buffer);
+            buffer[byteCount] = 0;
+            fixed (byte* ptr = &buffer[0])
+            {
+                Print((IntPtr)ptr, 1);
+            }
         }
 
         [DllImport("__Internal", EntryPoint = "N_Assert")]
@@ -68,9 +76,19 @@ namespace Nebula
             [return: MarshalAs(UnmanagedType.I1)]
             public static extern bool HasComponent(UInt64 entityId, uint componentId);
 
-            [DllImport("__Internal", EntryPoint = "ComponentGetId", CharSet = CharSet.Ansi)]
-            [return: MarshalAs(UnmanagedType.U4)]
-            public static extern uint GetComponentId(string name);
+            [DllImport("__Internal", EntryPoint = "ComponentGetIdUtf8")]
+            private static extern uint GetComponentIdUtf8(IntPtr name, uint length);
+
+            public static unsafe uint GetComponentId(string name)
+            {
+                int byteCount = Encoding.UTF8.GetByteCount(name);
+                Span<byte> buffer = stackalloc byte[byteCount + 1];
+                byteCount = Encoding.UTF8.GetBytes(name.AsSpan(), buffer);
+                fixed (byte* ptr = &buffer[0])
+                {
+                    return GetComponentIdUtf8((IntPtr)ptr, (uint)byteCount);
+                }
+            }
 
             [DllImport("__Internal", EntryPoint = "ComponentGetData")]
             public static extern void GetComponentData(UInt64 entityId, uint componentId, IntPtr data, int dataSize);
