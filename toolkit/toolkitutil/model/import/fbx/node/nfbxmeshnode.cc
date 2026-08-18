@@ -40,7 +40,7 @@ NFbxMeshNode::ExtractMesh(
     SceneNode* node
     , Util::Array<MeshBuilder>& meshes
     , const Util::Dictionary<ufbx_node*, SceneNode*>& nodeLookup
-    , const ToolkitUtil::ExportFlags flags
+    , const ToolkitUtil::ImportFlags flags
 )
 {
     node->mesh.meshIndex = meshes.Size();
@@ -68,6 +68,10 @@ NFbxMeshNode::ExtractMesh(
     if (parent != nullptr && parent->base.isPhysics)
     {
         node->mesh.material = "physics";
+    }
+    else
+    {
+        node->mesh.material = "system/placeholder";
     }
 
     if (fbxMesh->uv_sets.count > 1)

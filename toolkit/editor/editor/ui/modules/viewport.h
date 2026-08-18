@@ -66,9 +66,8 @@ private:
     Graphics::GraphicsEntityId directionalLight;
 
     CoreGraphics::TextureId targetTexture;
-    Dynui::ImguiTextureId textureInfo;
     Resources::ResourceId resourceId;
-
+    Ids::Id32 imguiTextureId;
     bool focused = false;
 
     Util::String frameBuffer;

@@ -36,7 +36,7 @@ GPULangShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO
     n_assert(stream.isvalid());
     n_assert(stream->CanBeMapped());
 
-    void* srcData = stream->Map();
+    void* srcData = stream->MemoryMap();
     uint srcDataSize = stream->GetSize();
 
     Resources::ResourceLoader::ResourceInitOutput ret;
@@ -53,34 +53,39 @@ GPULangShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO
     shaderInfo.loader = loader;
     shaderInfo.name = job.name;
     ret.id = CreateShader(shaderInfo);
+    stream->Close();
     return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Resources::Resource::State
-GPULangShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
+Resources::ResourceLoader::ResourceInitOutput
+GPULangShaderLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
-    /*
-    void* srcData = stream->Map();
+    void* srcData = stream->MemoryMap();
     uint srcDataSize = stream->GetSize();
 
-    // load effect from memory
-    AnyFX::ShaderEffect* effect = AnyFX::EffectFactory::Instance()->CreateShaderEffectFromMemory(srcData, srcDataSize);
+    Resources::ResourceLoader::ResourceInitOutput ret;
+    ret.id = job.id.resource;
 
-    // catch any potential error coming from AnyFX
-    if (!effect)
+    GPULang::Loader* loader = new GPULang::Loader;
+
+    if (!loader->Load((const char*)srcData, srcDataSize))
     {
-        n_error("GPULangShaderLoader::ReloadFromStream(): failed to load shader '%s'!",
-            this->GetName(id.resourceId).Value());
-        return Resources::Resource::Failed;
+        ret.id = CoreGraphics::InvalidShaderId;
     }
 
-    ShaderId shader = id.resource;
-    ReloadShader(shader, effect);
-    */
-    return Resources::Resource::Failed;
+    GPULangShaderCreateInfo shaderInfo;
+    shaderInfo.loader = loader;
+    shaderInfo.name = this->GetName(job.id);
+    ShaderId shader = job.id.resource;
+    if (!CoreGraphics::ReloadShader(shader.id, shaderInfo))
+    {
+        n_printf("Failed to reload shader %s, keeping the old one\n", stream->GetURI().LocalPath().AsCharPtr());
+    }
+    stream->Close();
+    return ret;
 }
 
 //------------------------------------------------------------------------------

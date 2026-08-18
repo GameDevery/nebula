@@ -137,6 +137,87 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
+inline Ptr<IO::Stream>
+CreateStream(const IO::URI& uri)
+{
+    return IoServer::Instance()->CreateStream(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+CreateDirectory(const IO::URI& uri)
+{
+    return IoServer::Instance()->CreateDirectory(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+FileExists(const IO::URI& uri)
+{
+    return IoServer::Instance()->FileExists(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Util::Array<Util::String>
+ListFiles(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFullPath = false)
+{
+    return IoServer::Instance()->ListFiles(dir, pattern, asFullPath);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Util::Array<Util::String>
+ListDirectories(const IO::URI& dir, const Util::String& pattern = nullptr, bool asFullPath = false)
+{
+    return IoServer::Instance()->ListDirectories(dir, pattern, asFullPath);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+DirectoryExists(const IO::URI& uri)
+{
+    return IoServer::Instance()->DirectoryExists(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+DeleteFile(const IO::URI& uri)
+{
+    return IoServer::Instance()->DeleteFile(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+CopyFile(const IO::URI& from, const IO::URI& to)
+{
+    return IoServer::Instance()->CopyFile(from, to);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+DeleteDirectory(const IO::URI& uri)
+{
+    return IoServer::Instance()->DeleteDirectory(uri);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
 {

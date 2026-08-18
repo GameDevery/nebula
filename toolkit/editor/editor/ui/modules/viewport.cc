@@ -73,6 +73,7 @@ Viewport::Init(Util::String const & viewName, const Graphics::StageMask mask)
     this->camera.Setup(1280, 900, 1 << 3);
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
+    this->imguiTextureId = Dynui::AllocateImguiTextureId({});
 }
 
 //------------------------------------------------------------------------------
@@ -86,6 +87,7 @@ Viewport::Init(const Graphics::ViewId view)
 	this->camera.AttachToView(this->view);
 	this->camera.Update();
     this->targetTexture = CoreGraphics::InvalidTextureId;
+    this->imguiTextureId = Dynui::AllocateImguiTextureId({});
 }
 
 //------------------------------------------------------------------------------
@@ -241,10 +243,6 @@ Viewport::Render()
 
     using namespace CoreGraphics;
 
-    this->textureInfo.nebulaHandle = textureId;
-    this->textureInfo.mip = 0;
-    this->textureInfo.layer = 0;
-
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 cursorPos = ImGui::GetCursorPos();
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -272,7 +270,13 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImGui::Image((void*)&this->textureInfo, imageSize, ImVec2(0, 0), uv);
+    Dynui::ImguiTextureId textureData;
+    textureData.nebulaHandle = textureId;
+    textureData.useAlpha = 0;
+
+    Dynui::SetImguiTextureIdData(this->imguiTextureId, textureData);
+    ImTextureRef ref {this->imguiTextureId};
+    ImGui::Image(ref, imageSize, ImVec2(0, 0), uv);
 
     ImVec2 elementPos = ImGui::GetItemRectMin();
     ImVec2 imagePosition = { cursorPos.x + localWindowPos.x, cursorPos.y + localWindowPos.y };

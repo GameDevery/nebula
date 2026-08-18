@@ -34,7 +34,7 @@ public:
     /// Set component mask
     void SetComponents(const MeshBuilderVertex::ComponentMask mask);
     /// Get components
-    const MeshBuilderVertex::ComponentMask GetComponents();
+    const MeshBuilderVertex::ComponentMask GetComponents() const;
 
     /// add a vertex
     void AddVertex(const MeshBuilderVertex& v);
@@ -53,12 +53,12 @@ public:
     /// set primitive topology
     void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& p);
     /// get primitive topology
-    const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology();
+    const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology() const;
 
     /// Set groups
     void SetPrimitiveGroups(const Util::Array<MeshBuilderGroup>& groups);
     /// Get groups
-    const Util::Array<MeshBuilderGroup>& GetPrimitiveGroups();
+    const Util::Array<MeshBuilderGroup>& GetPrimitiveGroups() const;
     /// Clear primitive groups
     void ClearPrimitiveGroups();
 
@@ -66,6 +66,8 @@ public:
     void CopyTriangle(const MeshBuilder& srcMesh, IndexT triIndex, Util::FixedArray<IndexT>& indexMap);
     /// compute overall bounding box
     Math::bbox ComputeBoundingBox() const;
+    /// Compute bounding box for primitive group
+    Math::bbox ComputeGroupBoundingBox(const MeshBuilderGroup& group) const;
 
     /// sort triangles by group id
     void SortTriangles();

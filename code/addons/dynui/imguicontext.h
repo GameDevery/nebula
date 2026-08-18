@@ -29,12 +29,14 @@ struct ImVec2;
 namespace Dynui
 {
 
+extern ImGuiKey NebulaToImguiKeyCodes[];
+extern Util::Array<Util::String> ImguiDragAndDropFiles;
 struct ImguiTextureId
 {
-    CoreGraphics::TextureId nebulaHandle;
+    CoreGraphics::TextureId nebulaHandle = 0;
     uint layer : 8 = 0;
     uint mip : 4 = 0;
-    uint useAlpha : 1 = 0;
+    uint useAlpha : 1 = 1;
     uint useRange : 1 = 0;
     float rangeMin, rangeMax;
     uint red : 1 = 1;
@@ -44,10 +46,20 @@ struct ImguiTextureId
     uint splat : 1 = 0;
 };
 
-extern ImFont* ImguiNormalFont;
-extern ImFont* ImguiSmallFont;
+extern Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator;
+
+/// Allocate imgui texture
+Ids::Id32 AllocateImguiTextureId(const ImguiTextureId& data);
+/// Set imgui texture data
+void SetImguiTextureIdData(Ids::Id32 id, const ImguiTextureId& data);
+/// Deallocate imgui texture
+void DeallocateImguiTextureId(Ids::Id32 id);
+
+
+extern ImFont* ImguiFont;
 extern ImFont* ImguiBoldFont;
 extern ImFont* ImguiItFont;
+extern ImFont* ImguiIconFont;
 
 class ImguiContext : public Graphics::GraphicsContext
 {
@@ -68,8 +80,6 @@ public:
     
     /// handle event
     static bool HandleInput(const Input::InputEvent& event);
-    /// reset key events
-    static void ResetKeyDownState();
 
     /// called if the window size has changed
     static void OnViewportResized(const uint framescriptHash, SizeT width, SizeT height);
@@ -85,5 +95,7 @@ private:
 
 /// Helper function to recreate the ImGUI close button used for windows and tabs
 void ImGuiCloseButton(bool& toggle, int id);
+/// Helper function for toggle buttons
+bool ImGuiToggleButton(const char* label, bool toggle);
 
 } // namespace Dynui

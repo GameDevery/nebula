@@ -4,13 +4,11 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 
-#include "toolkitutil/model/import/fbx/nfbxexporter.h"
-
 #include "assetbatcherapp.h"
 #include "io/assignregistry.h"
 #include "core/coreserver.h"
 #include "io/textreader.h"
-#include "asset/assetexporter.h"
+#include "asset/assetbatchprocessor.h"
 #include "io/console.h"
 #include "profiling/profiling.h"
 #include "nflatbuffer/flatbufferinterface.h"
@@ -154,12 +152,14 @@ AssetBatcherApp::DoWork()
 #if NEBULA_ENABLE_PROFILING
     Profiling::ProfilingNewFrame();
 #endif
-    Ptr<AssetExporter> exporter = AssetExporter::Create();
+    Ptr<AssetBatchProcessor> exporter = AssetBatchProcessor::Create();
     String dir = "";
     String file = "";
     String source = "";
-    ExporterBase::ExportFlag exportFlag = ExporterBase::All;
-    Dictionary<String, String> sources;
+    AssetProcessorBase::ExportFlag exportFlag = AssetProcessorBase::All;
+
+    IO::URI assetSourceRoot = this->projectInfo.GetPathAttr("AssetSourceRoot");
+    IO::URI assetWorkRoot = this->projectInfo.GetPathAttr("AssetWorkRoot");
 
     Jobs2::JobSystemInitInfo systemInit;
     systemInit.name = "JobSystem";
@@ -170,30 +170,23 @@ AssetBatcherApp::DoWork()
     Jobs2::JobSystemInit(systemInit);
 
     // override dests with settings from projectinfo
-    AssignRegistry::Instance()->SetAssign(Assign("tex", this->projectInfo.GetAttr("TextureDestDir")));
     AssignRegistry::Instance()->SetAssign(Assign("export", this->projectInfo.GetAttr("DestDir")));
     AssignRegistry::Instance()->SetAssign(Assign("intermediate", this->projectInfo.GetAttr("IntermediateDir")));
 
     bool force = false;
     if (this->args.HasArg("-work"))
     {
-        String workOverride = this->args.GetString("-work");
-        workOverride = IO::IoServer::NativePath(workOverride);
-        sources.Add("work", workOverride);
-    }
-    else
-    {
-        sources = this->projectInfo.GetListAttr("AssetSources");
+        assetWorkRoot = this->args.GetString("-work");
     }
     if (this->args.HasArg("-source"))
     {
-        source = this->args.GetString("-source");
-        if (!sources.Contains(source))
-        {
-            this->logger.Error("Unknown source: %s\n", source.AsCharPtr());
-            return;
-        }
+        assetSourceRoot = this->args.GetString("-source");
     }
+
+    // Setup bindings
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", assetSourceRoot.LocalPath()));
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("work", assetWorkRoot.LocalPath()));
+
     if (this->args.HasArg("-asset"))
     {
         if (source.IsEmpty())
@@ -201,17 +194,17 @@ AssetBatcherApp::DoWork()
             this->logger.Error("Specified asset argument without source argument\n");
             return;
         }
-        exportFlag = ExporterBase::Dir;
+        exportFlag = AssetProcessorBase::Dir;
         dir = this->args.GetString("-asset");
     }
     if (this->args.HasArg("-dir"))
     {
-        exportFlag = ExporterBase::Dir;
+        exportFlag = AssetProcessorBase::Dir;
         dir = this->args.GetString("-dir");
     }
     if (this->args.HasArg("-file"))
     {
-        exportFlag = ExporterBase::File;
+        exportFlag = AssetProcessorBase::File;
         file = this->args.GetString("-file");
     }
     if (this->args.HasArg("-force"))
@@ -224,20 +217,29 @@ AssetBatcherApp::DoWork()
     }
 
     Flat::FlatbufferInterface::Init();
-    AssetExporter::ExportModes mode = AssetExporter::All;
-    if (this->args.HasArg("-mode"))
+    AssetBatchProcessor::PackageModes packageMode = AssetBatchProcessor::PackageModes::All;
+    AssetBatchProcessor::ImportModes importMode = AssetBatchProcessor::ImportModes::None;
+    if (this->args.HasArg("-package_mode"))
     {
-        mode = (AssetExporter::ExportModes)0;
-        Util::String exportMode = this->args.GetString("-mode");
+        packageMode = (AssetBatchProcessor::PackageModes)0;
+        Util::String exportMode = this->args.GetString("-package_mode");
         Util::Array<Util::String> modeFlags = exportMode.Tokenize(",");
-        if (modeFlags.Find("fbx")) mode |= AssetExporter::FBX;
-        if (modeFlags.Find("model")) mode |= AssetExporter::Models;
-        if (modeFlags.Find("surface")) mode |= AssetExporter::Surfaces;
-        if (modeFlags.Find("particles")) mode |= AssetExporter::Particles;
-        if (modeFlags.Find("texture")) mode |= AssetExporter::Textures;
-        if (modeFlags.Find("physics")) mode |= AssetExporter::Physics;
-        if (modeFlags.Find("gltf")) mode |= AssetExporter::GLTF;
-        if (modeFlags.Find("audio")) mode |= AssetExporter::Audio;
+        if (modeFlags.Find("assets")) packageMode |= AssetBatchProcessor::PackageModes::Assets;
+        if (modeFlags.Find("surfaces")) packageMode |= AssetBatchProcessor::PackageModes::Materials;
+        if (modeFlags.Find("particles")) packageMode |= AssetBatchProcessor::PackageModes::Particles;
+        if (modeFlags.Find("textures")) packageMode |= AssetBatchProcessor::PackageModes::Textures;
+        if (modeFlags.Find("audio")) packageMode |= AssetBatchProcessor::PackageModes::Audio;
+    }
+
+    if (this->args.HasArg("-import_mode"))
+    {
+        importMode = (AssetBatchProcessor::ImportModes)0;
+        Util::String importModeStr = this->args.GetString("-import_mode");
+        Util::Array<Util::String> modeFlags = importModeStr.Tokenize(",");
+        if (modeFlags.Find("fbx")) importMode |= AssetBatchProcessor::ImportModes::FBX;
+        if (modeFlags.Find("gltf")) importMode |= AssetBatchProcessor::ImportModes::GLTF;
+        if (modeFlags.Find("images")) importMode |= AssetBatchProcessor::ImportModes::Images;
+        if (modeFlags.Find("sound")) importMode |= AssetBatchProcessor::ImportModes::Sound;
     }
 
     AssignRegistry::Instance()->SetAssign(Assign("home","proj:"));
@@ -260,12 +262,13 @@ AssetBatcherApp::DoWork()
     }
 
     exporter->Open();
-    exporter->SetExportMode(mode);
+    exporter->SetPackageMode((uint)packageMode);
+    exporter->SetImportMode((uint)importMode);
     exporter->SetForce(force);
     exporter->SetLogger(&this->logger);
-    if (force)
+    if (force && importMode == AssetBatchProcessor::ImportModes::None)
     {
-        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceParticles | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);
+        exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All | AssetBatchProcessor::PackageModes::ForceAll);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);
@@ -277,41 +280,61 @@ AssetBatcherApp::DoWork()
         IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", "proj:work"));
         exporter->UpdateSource();
         exporter->SetProgressMinMax(0, fileList.Size() * PRECISION);
-        exporter->ExportList(fileList);
+        exporter->ProcessList(fileList);
     }
     else
     {
         switch (exportFlag)
         {
-            case ExporterBase::All:
+            case AssetProcessorBase::All:
             {
-                for (auto const& src : sources)
+                if (importMode != AssetBatchProcessor::ImportModes::None)
                 {
-                    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", src.Value()));
-                    int files = IO::IoServer::Instance()->ListDirectories("src:assets/", "*").Size();
+                    int files = IO::IoServer::Instance()->ListDirectories("src:", "*").Size();
+                    exporter->UpdateSource();
+                    exporter->SetProgressMinMax(0, files* PRECISION);
+                    exporter->ProcessAll("src:");
+                    break;
+                }
+                if (packageMode != AssetBatchProcessor::PackageModes::None)
+                {
+                    int files = IO::IoServer::Instance()->ListDirectories("work:", "*").Size();
                     exporter->UpdateSource();
                     exporter->SetProgressMinMax(0, files * PRECISION);
-                    exporter->ExportAll();
+                    exporter->ProcessAll("work:");
+                    break;
                 }
                 break;
             }
-            case ExporterBase::Dir:
+            case AssetProcessorBase::Dir:
             {
-                IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", sources[source]));
-                int files = IO::IoServer::Instance()->ListDirectories("src:assets/", "*").Size();
-                exporter->UpdateSource();
-                exporter->SetProgressMinMax(0, files * PRECISION);
-                exporter->ExportDir(dir);
+                if (importMode != AssetBatchProcessor::ImportModes::None)
+                {
+                    int files = IO::IoServer::Instance()->ListDirectories("src:", "*").Size();
+                    exporter->UpdateSource();
+                    exporter->SetProgressMinMax(0, files* PRECISION);
+                    exporter->ProcessDir("src:" + dir);
+                    break;
+                }
+                if (packageMode != AssetBatchProcessor::PackageModes::None)
+                {
+                    int files = IO::IoServer::Instance()->ListDirectories("work:", "*").Size();
+                    exporter->UpdateSource();
+                    exporter->SetProgressMinMax(0, files * PRECISION);
+                    exporter->ProcessDir("work:" + dir);
+                    break;
+                }
                 break;
             }
-            case ExporterBase::File:
+            case AssetProcessorBase::File:
             {
-                IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", dir));
+                exporter->SetPackageMode((uint)AssetBatchProcessor::PackageModes::All);
                 exporter->UpdateSource();
-                IO::URI basePath("proj:work/assets");
-                exporter->SetCategory(dir.StripSubpath(basePath.LocalPath()));
+                IO::URI basePath("src:");
+                exporter->SetFolder(dir.StripSubstring(basePath.LocalPath()));
                 exporter->SetProgressMinMax(0, 1 * PRECISION);
-                exporter->ExportFile("src:" + file);
+                exporter->ProcessFile("src:" + file);
+
                 break;
             }
         }
@@ -443,7 +466,7 @@ AssetBatcherApp::CreateFileList()
         }
 
         // update progressbar in batchexporter
-        Ptr<Base::ExporterBase> dummy = Base::ExporterBase::Create();
+        Ptr<Base::AssetProcessorBase> dummy = Base::AssetProcessorBase::Create();
         dummy->SetProgressMinMax(0, res.Size() * PRECISION);
     }
     return res;

@@ -10,22 +10,28 @@
 #include "toolkit-common/platform.h"
 #include "io/stream.h"
 #include "system/byteorder.h"
+
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/skeleton.h"
+
 namespace ToolkitUtil
 {
 
 class SkeletonBuilderSaver
 {
 public:
-    /// save NSK3 file
-    static bool Save(const IO::URI& uri, const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform);
-
+    /// save flatbuffesr skeleton file
+    static std::unique_ptr<SkeletonResourceT> PackImport(const Util::Array<SkeletonBuilder>& skeletonBuilders, Platform::Code platform);
+    /// Save binary mesh file
+    static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::SkeletonResourceT* resource, Platform::Code platform);
 private:
     /// Write header to stream
-    static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<SkeletonBuilder>& skeletonBuilders, const System::ByteOrder& byteOrder);
+    static void WriteHeader(const Ptr<IO::Stream>& stream, const ToolkitUtil::SkeletonResourceT* resource, const System::ByteOrder& byteOrder);
     /// Write skeletons to stream
-    static void WriteSkeletons(const Ptr<IO::Stream>& stream, const Util::Array<SkeletonBuilder>& skeletonBuilders, const System::ByteOrder& byteOrder);
+    static void WriteSkeletons(const Ptr<IO::Stream>& stream, const ToolkitUtil::SkeletonResourceT* resource, const System::ByteOrder& byteOrder);
     /// Write skeleton
-    static void WriteJoints(const Ptr<IO::Stream>& stream, const Util::Array<SkeletonBuilder>& skeletonBuilders, const System::ByteOrder& byteOrder);
+    static void WriteJoints(const Ptr<IO::Stream>& stream, const ToolkitUtil::SkeletonResourceT* resource, const System::ByteOrder& byteOrder);
 };
 
 } // namespace ToolkitUtil

@@ -17,7 +17,7 @@ enum MeshFlags
     HasTangents = 0x10
 };
 
-enum ExportFlags
+enum ImportFlags
 {
     None = 0,
     RemoveRedundant = 1 << 0,
@@ -27,9 +27,8 @@ enum ExportFlags
     ImportSecondaryUVs = 1 << 4,
     CalcTangents = 1 << 5,
     CalcRigidSkin = 1 << 6,
-    All = (1 << 7) - 1,
-
-    NumMeshFlags
+    ReplaceExistingMesh = 1 << 7,
+    All = (1 << 8) - 1
 };
 
 enum PhysicsExportMode

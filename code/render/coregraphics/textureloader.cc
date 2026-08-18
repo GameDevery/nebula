@@ -162,6 +162,7 @@ TextureLoader::TextureLoader()
     this->async = true;
     this->placeholderResourceName = "systex:white.dds";
     this->failResourceName = "systex:error.dds";
+    this->loaderExtension = "dds";
 
     this->streamerThreadName = "Texture Streamer Thread";
 
@@ -417,7 +418,6 @@ inline void
 TextureLoader::Unload(const Resources::ResourceId id)
 {
     // Free streamer alloc
-    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
     Memory::Free(Memory::ScratchHeap, this->streamDatas[id.loaderInstanceId].data);
     TextureId tex = id.resource;
     CoreGraphics::DestroyTexture(tex);

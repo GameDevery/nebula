@@ -58,6 +58,21 @@ ShaderStateNode::CreateResourceTables()
     return ret;
 }
 
+#if WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::SetMaterial(const IO::URN& res)
+{
+    this->materialName = res;
+    Resources::CreateResource(this->materialName, this->tag, [this](Resources::ResourceId id)
+    {
+        this->material = id;
+    });
+}
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -65,14 +80,9 @@ bool
 ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
     bool retval = true;
-    if (FourCC('MNMT') == fourcc)
+    if (FourCC('MATE') == fourcc)
     {
-        // this isn't used, it's been deprecated, the 'MATE' tag is the relevant one
-        Util::String materialName = reader->ReadString();
-    }
-    else if (FourCC('MATE') == fourcc)
-    {
-        this->materialName = reader->ReadString();
+        this->materialName = IO::URN(reader->ReadString());
     }
     else
     {

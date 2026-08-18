@@ -153,8 +153,22 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplatesGPULang::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     auto itemData = (const MaterialEditorItemData*)item->data;
-    ImGui::PushFont(Dynui::ImguiBoldFont);
-    ImGui::Text(materialTemplate->name);
+
+    static int selectedTemplate = 0;
+    ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
+    if (ImGui::BeginCombo("Template", materialTemplate->name))
+    {
+        for (const auto& it : MaterialTemplatesGPULang::Lookup)
+        {
+            const MaterialTemplatesGPULang::Entry* entry = it.Value();
+            if (ImGui::Selectable(entry->name) && materialTemplate->name != entry->name)
+            {
+                Materials::MaterialSetTemplate(item->asset.material, entry);
+                materialTemplate = entry;
+            }            
+        }
+        ImGui::EndCombo();
+    }
     ImGui::PopFont();
 
     ImGui::Separator();
@@ -183,14 +197,15 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
             if (!name.IsEmpty())
             {
+                ImTextureRef ref {textureInfo->textureId};
                 ImGui::Text(kvp.Key());
                 bool pressed = false;
-                pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), &textureInfo->texture, ImVec2{ 32, 32 });
+                pressed |= ImGui::ImageButton(Util::Format("%s###IMAGE%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr(), ref, ImVec2{ 32, 32 });
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
                     if (ImGui::BeginTooltip())
                     {
-                        ImGui::Image(&textureInfo->texture, ImVec2{ 256, 256 });
+                        ImGui::Image(ref, ImVec2{ 256, 256 });
                         ImGui::EndTooltip();
                     }
                 }
@@ -345,6 +360,17 @@ MaterialSetup(AssetEditorItem* item)
     itemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
     item->data = itemData;
 
+    Ptr<IO::Stream> assetFileStream = IO::CreateStream(item->source);
+    if (assetFileStream->Open())
+    {
+        void* data = assetFileStream->MemoryMap();
+
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<ToolkitUtil::MaterialResource>(itemData->asset, (uint8_t*)data);
+
+        assetFileStream->MemoryUnmap();
+        assetFileStream->Close();
+    }
+
     if (MaterialSphere == CoreGraphics::InvalidMeshResourceId)
     {
         MaterialSphere = Resources::CreateResource("sysmsh:material_knob.nvx", "preview", nullptr, nullptr, true, false).resourceId;
@@ -371,6 +397,7 @@ MaterialSetup(AssetEditorItem* item)
 
     for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
     {
+        itemData->images[i].textureId = Dynui::AllocateImguiTextureId({});
         auto kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
         Resources::ResourceId res = Materials::MaterialGetTexture(item->asset.material, kvp.Value()->textureIndex);
         if (res.resourceId == Resources::InvalidResourceId.resourceId)
@@ -381,6 +408,7 @@ MaterialSetup(AssetEditorItem* item)
             itemData->images[i].texture.layer = 0;
             itemData->images[i].texture.mip = 0;
             itemData->images[i].texture.nebulaHandle = res.resource;
+            Dynui::SetImguiTextureIdData(itemData->images[i].textureId, itemData->images[i].texture);
             memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
         });
 
@@ -388,6 +416,7 @@ MaterialSetup(AssetEditorItem* item)
         itemData->images[i].texture.layer = 0;
         itemData->images[i].texture.mip = 0;
         itemData->images[i].texture.nebulaHandle = res.resource;
+        Dynui::SetImguiTextureIdData(itemData->images[i].textureId, itemData->images[i].texture);
         memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
     }
 }
@@ -404,20 +433,17 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
     memcpy(itemData->originalConstants, itemData->constants, materialTemplate->bufferSize);
     memcpy(itemData->originalImages, itemData->images, sizeof(ImageHolder) * materialTemplate->numTextures);
 
-    Util::String output = Editor::PathConverter::StripAssetName(item->name.AsString());
 
-    Util::String outFile = Util::Format("assets:%s.sur", output.AsCharPtr());
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
-    stream->SetURI(outFile);
+    stream->SetURI(item->source);
 
     MaterialSerialize(stream, itemData, item->asset.material, materialTemplate);
 
     // Also perform export
     ToolkitUtil::BinaryXmlConverter converter;
-    Util::String expFile = Util::Format("sur:%s.sur", output.AsCharPtr());
     ToolkitUtil::Logger logger;
-    converter.ConvertFile(outFile, expFile, logger);
+    converter.ConvertFile(item->source.LocalPath(), item->path.LocalPath(), logger);
 
     assetEditor->Unedit(item->editCounter);
     item->editCounter = 0;
@@ -437,6 +463,7 @@ MaterialDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
 
     for (IndexT i = 0; i < materialTemplate->numTextures; i++)
     {
+        Dynui::DeallocateImguiTextureId(itemData->images[i].textureId);
         const MaterialTemplatesGPULang::MaterialTemplateTexture* texBind = materialTemplate->textures.ValueAtIndex(i);
         ImageHolder* currentImage = &itemData->images[i];
         ImageHolder* originalImage = &itemData->originalImages[i];

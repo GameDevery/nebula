@@ -32,6 +32,149 @@ using namespace Input;
 
 namespace Dynui
 {
+Util::Array<Util::String> ImguiDragAndDropFiles;
+ImGuiKey NebulaToImguiKeyCodes[] =
+{
+    ImGuiKey_Backspace,      // Code::Back
+    ImGuiKey_Tab,            // Code::Tab
+    ImGuiKey_None,           // Code::Clear (No direct mapping)
+    ImGuiKey_Enter,          // Code::Return
+    ImGuiKey_LeftShift,      // Code::Shift (Assuming Left Shift)
+    ImGuiKey_LeftCtrl,       // Code::Control (Assuming Left Control)
+    ImGuiKey_Menu,           // Code::Menu
+    ImGuiKey_Pause,          // Code::Pause
+    ImGuiKey_CapsLock,       // Code::Capital
+    ImGuiKey_Escape,         // Code::Escape
+    ImGuiKey_None,           // Code::Convert (No direct mapping)
+    ImGuiKey_None,           // Code::NonConvert (No direct mapping)
+    ImGuiKey_None,           // Code::Accept (No direct mapping)
+    ImGuiKey_None,           // Code::ModeChange (No direct mapping)
+    ImGuiKey_Space,          // Code::Space
+    ImGuiKey_PageUp,         // Code::Prior
+    ImGuiKey_PageDown,       // Code::Next
+    ImGuiKey_End,            // Code::End
+    ImGuiKey_Home,           // Code::Home
+    ImGuiKey_LeftArrow,      // Code::Left
+    ImGuiKey_RightArrow,     // Code::Right
+    ImGuiKey_UpArrow,        // Code::Up
+    ImGuiKey_DownArrow,      // Code::Down
+    ImGuiKey_None,           // Code::Select (No direct mapping)
+    ImGuiKey_PrintScreen,    // Code::Print
+    ImGuiKey_None,           // Code::Execute (No direct mapping)
+    ImGuiKey_PrintScreen,    // Code::Snapshot
+    ImGuiKey_Insert,         // Code::Insert
+    ImGuiKey_Delete,         // Code::Delete
+    ImGuiKey_None,           // Code::Help (No direct mapping)
+    ImGuiKey_LeftSuper,          // Code::LeftWindows (No direct mapping)
+    ImGuiKey_RightSuper,          // Code::RightWindows (No direct mapping)
+    ImGuiKey_None,           // Code::Apps (No direct mapping)
+    ImGuiKey_None,           // Code::Sleep (No direct mapping)
+    ImGuiKey_Keypad0,        // Code::NumPad0
+    ImGuiKey_Keypad1,        // Code::NumPad1
+    ImGuiKey_Keypad2,        // Code::NumPad2
+    ImGuiKey_Keypad3,        // Code::NumPad3
+    ImGuiKey_Keypad4,        // Code::NumPad4
+    ImGuiKey_Keypad5,        // Code::NumPad5
+    ImGuiKey_Keypad6,        // Code::NumPad6
+    ImGuiKey_Keypad7,        // Code::NumPad7
+    ImGuiKey_Keypad8,        // Code::NumPad8
+    ImGuiKey_Keypad9,        // Code::NumPad9
+    ImGuiKey_KeypadMultiply, // Code::Multiply
+    ImGuiKey_KeypadAdd,      // Code::Add
+    ImGuiKey_KeypadSubtract, // Code::Subtract
+    ImGuiKey_None,           // Code::Separator (No direct mapping)
+    ImGuiKey_KeypadDecimal,  // Code::Decimal
+    ImGuiKey_KeypadDivide,   // Code::Divide
+    ImGuiKey_F1,             // Code::F1
+    ImGuiKey_F2,             // Code::F2
+    ImGuiKey_F3,             // Code::F3
+    ImGuiKey_F4,             // Code::F4
+    ImGuiKey_F5,             // Code::F5
+    ImGuiKey_F6,             // Code::F6
+    ImGuiKey_F7,             // Code::F7
+    ImGuiKey_F8,             // Code::F8
+    ImGuiKey_F9,             // Code::F9
+    ImGuiKey_F10,            // Code::F10
+    ImGuiKey_F11,            // Code::F11
+    ImGuiKey_F12,            // Code::F12
+    ImGuiKey_NumLock,        // Code::NumLock
+    ImGuiKey_ScrollLock,     // Code::Scroll
+    ImGuiKey_Semicolon,      // Code::Semicolon
+    ImGuiKey_Slash,          // Code::Slash
+    ImGuiKey_GraveAccent,    // Code::Tilde
+    ImGuiKey_LeftBracket,    // Code::LeftBracket
+    ImGuiKey_RightBracket,   // Code::RightBracket
+    ImGuiKey_Backslash,      // Code::BackSlash
+    ImGuiKey_Apostrophe,     // Code::Quote
+    ImGuiKey_Comma,          // Code::Comma
+    ImGuiKey_None,           // Code::Underbar (No direct mapping)
+    ImGuiKey_Period,         // Code::Period
+    ImGuiKey_Equal,          // Code::Equality
+    ImGuiKey_LeftShift,      // Code::LeftShift
+    ImGuiKey_RightShift,     // Code::RightShift
+    ImGuiKey_LeftCtrl,       // Code::LeftControl
+    ImGuiKey_RightCtrl,      // Code::RightControl
+    ImGuiKey_LeftAlt,        // Code::LeftMenu (assuming this maps to Alt)
+    ImGuiKey_RightAlt,       // Code::RightMenu
+    ImGuiKey_None,           // Code::BrowserBack (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserForward (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserRefresh (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserStop (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserSearch (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserFavorites (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserHome (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::VolumeMute (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::VolumeDown (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::VolumeUp (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaNextTrack (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaPrevTrack (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaStop (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaPlayPause (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchMail (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchMediaSelect (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchApp1 (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchApp2 (No direct mapping in ImGuiKey)
+    ImGuiKey_0,              // Code::Key0
+    ImGuiKey_1,              // Code::Key1
+    ImGuiKey_2,              // Code::Key2
+    ImGuiKey_3,              // Code::Key3
+    ImGuiKey_4,              // Code::Key4
+    ImGuiKey_5,              // Code::Key5
+    ImGuiKey_6,              // Code::Key6
+    ImGuiKey_7,              // Code::Key7
+    ImGuiKey_8,              // Code::Key8
+    ImGuiKey_9,              // Code::Key9
+    ImGuiKey_A,              // Code::A
+    ImGuiKey_B,              // Code::B
+    ImGuiKey_C,              // Code::C
+    ImGuiKey_D,              // Code::D
+    ImGuiKey_E,              // Code::E
+    ImGuiKey_F,              // Code::F
+    ImGuiKey_G,              // Code::G
+    ImGuiKey_H,              // Code::H
+    ImGuiKey_I,              // Code::I
+    ImGuiKey_J,              // Code::J
+    ImGuiKey_K,              // Code::K
+    ImGuiKey_L,              // Code::L
+    ImGuiKey_M,              // Code::M
+    ImGuiKey_N,              // Code::N
+    ImGuiKey_O,              // Code::O
+    ImGuiKey_P,              // Code::P
+    ImGuiKey_Q,              // Code::Q
+    ImGuiKey_R,              // Code::R
+    ImGuiKey_S,              // Code::S
+    ImGuiKey_T,              // Code::T
+    ImGuiKey_U,              // Code::U
+    ImGuiKey_V,              // Code::V
+    ImGuiKey_W,              // Code::W
+    ImGuiKey_X,              // Code::X
+    ImGuiKey_Y,              // Code::Y
+    ImGuiKey_Z,              // Code::Z
+    ImGuiKey_None,           // Code::NumKeyCodes (No direct mapping, represents total count)
+    ImGuiKey_None            // Code::InvalidKey (No direct mapping)
+};
+
+Ids::IdAllocator<ImguiTextureId> ImguiTextureIdAllocator(0xFFF);
 
 struct ImguiState
 {
@@ -42,9 +185,6 @@ struct ImguiState
 #if WITH_NEBULA_EDITOR
     CoreGraphics::PipelineId editorPipeline;
 #endif
-
-    ImguiTextureId fontTexture;
-    //CoreGraphics::TextureId fontTexture;
 
     Util::FixedArray<CoreGraphics::BufferId> vbos;
     Util::FixedArray<CoreGraphics::BufferId> ibos;
@@ -64,6 +204,8 @@ struct ImguiState
     Ptr<ImguiInputHandler> inputHandler;
     Ptr<ImguiDisplayEventHandler> displayEventHandler;
     bool dockOverViewport;
+
+    Util::Array<ImTextureData*> pendingTextureUpdates;
 } state;
 
 IndexT VertexBufferOffset = 0;
@@ -78,10 +220,10 @@ SizeT TotalIndicesThisFrame = 0;
 
 static Core::CVar* ui_opacity;
 
-ImFont* ImguiNormalFont;
-ImFont* ImguiSmallFont;
+ImFont* ImguiFont;
 ImFont* ImguiBoldFont;
 ImFont* ImguiItFont;
+ImFont* ImguiIconFont;
 
 //------------------------------------------------------------------------------
 /**
@@ -95,6 +237,44 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
     int fb_height = (int)(viewport.height() * io.DisplayFramebufferScale.y);
     data->ScaleClipRects(io.DisplayFramebufferScale);
+
+    if (data->Textures != nullptr)
+    {
+        for (ImTextureData* textureData : *data->Textures)
+        {
+            if (textureData->Status == ImTextureStatus_WantCreate)
+            {
+                CoreGraphics::TextureCreateInfo texInfo;
+                texInfo.name = Util::Format("ImGUI Texture %d", textureData->UniqueID);
+                texInfo.width = textureData->Width;
+                texInfo.height = textureData->Height;
+                texInfo.depth = 1;
+                texInfo.mips = 1;
+                texInfo.format = textureData->Format == ImTextureFormat_RGBA32 ? CoreGraphics::PixelFormat::R8G8B8A8 : CoreGraphics::PixelFormat::R8;
+                texInfo.data = textureData->Pixels;
+                texInfo.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination;
+                CoreGraphics::TextureId tex = CoreGraphics::CreateTexture(texInfo);
+
+                Ids::Id32 id = AllocateImguiTextureId({.nebulaHandle = tex.id});
+                textureData->TexID = id;
+                textureData->Status = ImTextureStatus_OK;
+            }
+            else if (textureData->Status == ImTextureStatus_WantDestroy)
+            {
+                ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->TexID);
+                CoreGraphics::DestroyTexture(tex.nebulaHandle);
+                tex.nebulaHandle = CoreGraphics::InvalidTextureId;
+                ImguiTextureIdAllocator.Dealloc(textureData->TexID);
+                textureData->TexID = 0;
+                textureData->Status = ImTextureStatus_Destroyed;
+            }
+            else if (textureData->Status == ImTextureStatus_WantUpdates)
+            {
+                state.pendingTextureUpdates.Append(textureData);
+            }
+        }
+    }
 
     // get renderer
     //const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
@@ -195,7 +375,6 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         uint bits = 0xF;
     };
 
-
     IndexT i;
     for (i = 0; i < data->CmdListsCount; i++)
     {
@@ -231,9 +410,8 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 scissorRect.right = Math::min(data->DisplaySize.x, scissorRect.right);
                 scissorRect.bottom = Math::min(data->DisplaySize.y, scissorRect.bottom);
                 CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
-                ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
 
-
+                const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(command->TexRef.GetTexID());
                 TextureInfo texInfo;
                 texInfo.type = 0;
                 texInfo.useRange = tex.useRange;
@@ -241,17 +419,17 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.splat = tex.splat;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
-                CoreGraphics::TextureId texture = tex.nebulaHandle;
-                CoreGraphics::TextureIdLock _0(texture);
-                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
-                CoreGraphics::PixelFormat::Code format = CoreGraphics::TextureGetPixelFormat(texture);
+                CoreGraphics::TextureIdLock _0(tex.nebulaHandle);
+                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(tex.nebulaHandle);
+                Util::StringAtom name = CoreGraphics::TextureGetName(tex.nebulaHandle);
+                CoreGraphics::PixelFormat::Code format = CoreGraphics::TextureGetPixelFormat(tex.nebulaHandle);
                 texInfo.splat |= CoreGraphics::PixelFormat::ToChannels(format) == 1 ? 1 : 0;
-                auto usage = CoreGraphics::TextureGetUsage(texture);
+                auto usage = CoreGraphics::TextureGetUsage(tex.nebulaHandle);
                 if (HasFlags(usage, CoreGraphics::TextureUsage::Render) || HasFlags(usage, CoreGraphics::TextureUsage::ReadWrite))
                 {
                     texInfo.useAlpha = false;
                 }
-                SizeT layers = CoreGraphics::TextureGetNumLayers(texture);
+                SizeT layers = CoreGraphics::TextureGetNumLayers(tex.nebulaHandle);
                 if (layers > 1)
                 {
                     texInfo.type = 1;
@@ -262,7 +440,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 }
                 texInfo.layer = tex.layer;
                 texInfo.mip = tex.mip;
-                texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
+                texInfo.id = CoreGraphics::TextureGetBindlessHandle(tex.nebulaHandle);
 
                 ColorMask colorMask;
                 colorMask.red = tex.red;
@@ -458,14 +636,56 @@ ImguiContext::Create()
                 state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, CoreGraphics::InvalidPassId, 0, pass, inputAssembly });
             });
 
+        FrameScript_editorframe::RegisterSubgraph_ImGuiUpdateTextures_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT)
+            {
+                for (ImTextureData* textureData : state.pendingTextureUpdates)
+                {
+                    CoreGraphics::BufferCreateInfo updateBuf;
+                    
+                    updateBuf.byteSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.data = textureData->Pixels;
+                    updateBuf.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+                    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(updateBuf);
+
+                    const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->GetTexID());
+
+                    Util::Array<CoreGraphics::BufferCopy, 4> sourceCopies;
+                    Util::Array<CoreGraphics::TextureCopy, 4> destinationCopies;
+
+                    CoreGraphics::BufferCopy& bufCpy = sourceCopies.Emplace();
+                    bufCpy.rowLength = textureData->GetPitch() / textureData->BytesPerPixel;
+                    bufCpy.offset = (textureData->UpdateRect.x + textureData->UpdateRect.y * textureData->Width) * textureData->BytesPerPixel;
+                    CoreGraphics::TextureCopy& texCpy = destinationCopies.Emplace();
+                    texCpy.mip = 0;
+                    texCpy.bits = CoreGraphics::ImageBits::ColorBits;
+                    texCpy.layer = 0;
+                    texCpy.region = Math::rectangle<int>(textureData->UpdateRect.x, textureData->UpdateRect.y, textureData->UpdateRect.x + textureData->UpdateRect.w, textureData->UpdateRect.y + textureData->UpdateRect.h);
+
+                    CoreGraphics::BarrierPush(
+                        cmdBuf,
+                        CoreGraphics::PipelineStage::PixelShaderRead,
+                        CoreGraphics::PipelineStage::TransferWrite,
+                        CoreGraphics::BarrierDomain::Global,
+                        {
+                            CoreGraphics::TextureBarrierInfo {.tex = tex.nebulaHandle, .subres = CoreGraphics::TextureSubresourceInfo::Color()}
+                        }
+                    );
+                    CoreGraphics::CmdCopy(cmdBuf, buf, sourceCopies, tex.nebulaHandle, destinationCopies);
+                    CoreGraphics::BarrierPop(cmdBuf);
+                    CoreGraphics::DestroyBuffer(buf);
+                    textureData->Status = ImTextureStatus_OK;
+                }
+                state.pendingTextureUpdates.Clear();
+            });
         FrameScript_editorframe::RegisterSubgraph_ImGUI_Render([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
             {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
-                N_MARKER_BEGIN(ImGuiRender, ImGUI)
-                ImGui::Render();
-                N_MARKER_END()
+                // This is handled by UiManager in the editor
+                //ImGui::Render();
+                //ImGui::UpdatePlatformWindows();
                 if (CoreGraphics::UpdatingWindow != CoreGraphics::InvalidWindowId)
                 {
                     void* userData = CoreGraphics::WindowGetUserData(CoreGraphics::UpdatingWindow);
@@ -478,15 +698,11 @@ ImguiContext::Create()
                     {
                         N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
                         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-                        ImGuiSecondaryWindowData data;
-                        data.buf = cmdBuf;
-                        data.viewport = viewport;
-                        data.id = *static_cast<ImGuiID*>(userData);
                         for (int i = 1; i < platform_io.Viewports.Size; i++)
                         {
-                            ImGuiViewport* viewport = platform_io.Viewports[i];
-                            if (viewport->ID == data.id)
-                                platform_io.Renderer_RenderWindow(viewport, &data);
+                            ImGuiViewport* imguiViewport = platform_io.Viewports[i];
+                            if (imguiViewport->ID == *static_cast<ImGuiID*>(userData))
+                                ImguiDrawFunction(cmdBuf, viewport, imguiViewport->DrawData);
                         }
                         N_MARKER_END()
                     }
@@ -504,6 +720,39 @@ ImguiContext::Create()
     else
 #endif
     {
+        FrameScript_default::RegisterSubgraph_ImGuiUpdateTextures_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueueType queue, const Math::rectangle<int>& viewport, const IndexT, const IndexT)
+            {
+                for (ImTextureData* textureData : state.pendingTextureUpdates)
+                {
+                    CoreGraphics::BufferCreateInfo updateBuf;
+                    updateBuf.byteSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.dataSize = textureData->Width * textureData->Height * textureData->BytesPerPixel;
+                    updateBuf.data = textureData->Pixels;
+                    updateBuf.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+                    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(updateBuf);
+
+                    const ImguiTextureId& tex = ImguiTextureIdAllocator.Get<0>(textureData->GetTexID());
+
+                    Util::Array<CoreGraphics::BufferCopy, 4> sourceCopies;
+                    Util::Array<CoreGraphics::TextureCopy, 4> destinationCopies;
+                    for (const ImTextureRect& rect : textureData->Updates)
+                    {
+                        CoreGraphics::BufferCopy& bufCpy = sourceCopies.Emplace();
+                        bufCpy.imageHeight = 0;
+                        bufCpy.rowLength = 0;
+                        bufCpy.offset = 0;
+                        CoreGraphics::TextureCopy& texCpy = destinationCopies.Emplace();
+                        texCpy.mip = 0;
+                        texCpy.bits = CoreGraphics::ImageBits::ColorBits;
+                        texCpy.layer = 0;
+                        texCpy.region = Math::rectangle<int>(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
+                    }
+                    CoreGraphics::CmdCopy(cmdBuf, buf, sourceCopies, tex.nebulaHandle, destinationCopies);
+                    CoreGraphics::DestroyBuffer(buf);
+                    textureData->Status = ImTextureStatus_OK;
+                }
+                state.pendingTextureUpdates.Clear();
+            });
         FrameScript_default::RegisterSubgraphPipelines_ImGUI_Render([](const CoreGraphics::RenderPassId pass)
             {
                 CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
@@ -518,6 +767,7 @@ ImguiContext::Create()
 #endif
                 N_MARKER_BEGIN(ImGuiRender, ImGUI)
                 ImGui::Render();
+                ImGui::UpdatePlatformWindows();
                 N_MARKER_END()
                 if (CoreGraphics::UpdatingWindow != CoreGraphics::InvalidWindowId)
                 {
@@ -532,14 +782,11 @@ ImguiContext::Create()
                         N_MARKER_BEGIN(ImGuiSecondaryWindowRender, ImGUI)
                         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
                         ImGuiSecondaryWindowData data;
-                        data.buf = cmdBuf;
-                        data.viewport = viewport;
-                        data.id = *static_cast<ImGuiID*>(userData);
                         for (int i = 1; i < platform_io.Viewports.Size; i++)
                         {
-                            ImGuiViewport* viewport = platform_io.Viewports[i];
-                            if (viewport->ID == data.id)
-                                platform_io.Renderer_RenderWindow(viewport, &data);
+                            ImGuiViewport* imguiViewport = platform_io.Viewports[i];
+                            if (imguiViewport->ID == *static_cast<ImGuiID*>(userData))
+                                ImguiDrawFunction(cmdBuf, viewport, imguiViewport->DrawData);
                         }
                         N_MARKER_END()
                     }
@@ -611,26 +858,26 @@ ImguiContext::Create()
 
     ImGuiStyle& style = ImGui::GetStyle();
 
-    style.FrameRounding = 6.0f;
-    style.GrabRounding = 6.0f;
+    style.FrameRounding = 12.0f;
+    style.GrabRounding = 12.0f;
     style.ChildRounding = 6.0f;
-    style.WindowRounding = 6.0f;
-    style.PopupRounding = 1.0f;
+    style.WindowRounding = 12.0f;
+    style.PopupRounding = 12.0f;
     style.ScrollbarRounding = 12.0f;
-    style.TabRounding = 6.0f;
-    style.TabMinWidthForCloseButton = FLT_MAX;
+    style.TabRounding = 8.0f;
+    style.TabCloseButtonMinWidthSelected = FLT_MAX;
     style.WindowTitleAlign = { 0.0f, 0.52f };
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
     style.WindowPadding = { 10.0f, 10.0f };
     // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
-    style.FramePadding = { 4, 4 };//{ 16, 3 };
+    style.FramePadding = { 12, 4 };//{ 16, 3 };
     style.ItemInnerSpacing = { 2, 2 };
-    style.ItemSpacing = { 2, 2 };
+    style.ItemSpacing = { 4, 4 };
     style.IndentSpacing = 10.0f;
-    style.GrabMinSize = 8.0f;
+    style.GrabMinSize = 20.0f;
 
-    style.FrameBorderSize = 1.0f;
+    style.FrameBorderSize = 0.0f;
     style.WindowBorderSize = 1.0f;
     style.PopupBorderSize = 1.0f;
     style.ChildBorderSize = 0.0f;
@@ -659,6 +906,7 @@ ImguiContext::Create()
     colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(1.00f, 0.38f, 0.00f, 0.90f);
     colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
     colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 0.31f, 0.00f, 1.00f);
+    colors[ImGuiCol_CheckboxSelectedBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.413f);
     colors[ImGuiCol_SliderGrab] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     colors[ImGuiCol_SliderGrabActive] = ImVec4(0.30f, 0.33f, 0.33f, 1.00f);
     colors[ImGuiCol_Button] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
@@ -675,9 +923,10 @@ ImguiContext::Create()
     colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 0.50f, 0.40f, 1.00f);
     colors[ImGuiCol_Tab] = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
     colors[ImGuiCol_TabHovered] = ImVec4(0.16f, 0.16f, 0.16f, 0.80f);
-    colors[ImGuiCol_TabActive] = ImVec4(0.71f, 0.27f, 0.00f, 1.00f);
-    colors[ImGuiCol_TabUnfocused] = ImVec4(0.16f, 0.16f, 0.16f, 0.97f);
-    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
+    colors[ImGuiCol_TabSelected] = ImVec4(0.71f, 0.27f, 0.00f, 1.00f);
+    colors[ImGuiCol_TabSelectedOverline] = ImVec4(1.0f, 0.61f, 0.34f, 1.00f);
+    colors[ImGuiCol_TabDimmed] = ImVec4(0.077f, 0.077f, 0.077f, 0.86f);
+    colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.424f, 0.29f, 0.136f, 1.00f);
     colors[ImGuiCol_DockingPreview] = ImVec4(1.00f, 0.30f, 0.00f, 0.23f);
     colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
     colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
@@ -690,31 +939,31 @@ ImguiContext::Create()
     colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.022f);
     colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
-    colors[ImGuiCol_DragDropTarget] = ImVec4(0.74f, 0.37f, 0.00f, 0.70f);
-    colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_NavCursor] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
     colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.0f);
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
-    io.KeyMap[ImGuiKey_Tab] = Key::Tab;
-    io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
-    io.KeyMap[ImGuiKey_RightArrow] = Key::Right;
-    io.KeyMap[ImGuiKey_UpArrow] = Key::Up;
-    io.KeyMap[ImGuiKey_DownArrow] = Key::Down;
-    io.KeyMap[ImGuiKey_Home] = Key::Home;
-    io.KeyMap[ImGuiKey_End] = Key::End;
-    io.KeyMap[ImGuiKey_Delete] = Key::Delete;
-    io.KeyMap[ImGuiKey_Backspace] = Key::Back;
-    io.KeyMap[ImGuiKey_Enter] = Key::Return;
-    io.KeyMap[ImGuiKey_Escape] = Key::Escape;
-    io.KeyMap[ImGuiKey_Space] = Key::Space;
-    io.KeyMap[ImGuiKey_A] = Key::A;
-    io.KeyMap[ImGuiKey_C] = Key::C;
-    io.KeyMap[ImGuiKey_V] = Key::V;
-    io.KeyMap[ImGuiKey_X] = Key::X;
-    io.KeyMap[ImGuiKey_Y] = Key::Y;
-    io.KeyMap[ImGuiKey_Z] = Key::Z;
+    //io.KeyMap[ImGuiKey_Tab] = Key::Tab;
+    //io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
+    //io.KeyMap[ImGuiKey_RightArrow] = Key::Right;
+    //io.KeyMap[ImGuiKey_UpArrow] = Key::Up;
+    //io.KeyMap[ImGuiKey_DownArrow] = Key::Down;
+    //io.KeyMap[ImGuiKey_Home] = Key::Home;
+    //io.KeyMap[ImGuiKey_End] = Key::End;
+    //io.KeyMap[ImGuiKey_Delete] = Key::Delete;
+    //io.KeyMap[ImGuiKey_Backspace] = Key::Back;
+    //io.KeyMap[ImGuiKey_Enter] = Key::Return;
+    //io.KeyMap[ImGuiKey_Escape] = Key::Escape;
+    //io.KeyMap[ImGuiKey_Space] = Key::Space;
+    //io.KeyMap[ImGuiKey_A] = Key::A;
+    //io.KeyMap[ImGuiKey_C] = Key::C;
+    //io.KeyMap[ImGuiKey_V] = Key::V;
+    //io.KeyMap[ImGuiKey_X] = Key::X;
+    //io.KeyMap[ImGuiKey_Y] = Key::Y;
+    //io.KeyMap[ImGuiKey_Z] = Key::Z;
 
     // enable keyboard navigation
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -722,11 +971,14 @@ ImguiContext::Create()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 #endif
 
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+
 #ifdef IMGUI_HAS_VIEWPORT
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
-    //io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    io.BackendFlags |= ImGuiBackendFlags_HasParentViewport;
 
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -801,6 +1053,8 @@ ImguiContext::Create()
         ImguiDrawFunction(data->buf, data->viewport, vp->DrawData);
     };
 
+    
+
     const auto& monitors = CoreGraphics::DisplayDevice::Instance()->GetMonitors();
     SizeT xOffset = 0, yOffset = 0;
     for (const auto& monitor : monitors)
@@ -824,44 +1078,21 @@ ImguiContext::Create()
 
     // load default font
     ImFontConfig config;
-    config.OversampleH = 3;
-    config.OversampleV = 1;
-#if __WIN32__
-    ImguiNormalFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 11, &config);
-    ImguiSmallFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 9, &config);
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrib.ttf", scaleFactor * 11, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibrii.ttf", scaleFactor * 11, &config);
-#else
-    ImguiNormalFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", scaleFactor * 11, &config);
-    ImguiSmallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", scaleFactor * 9, &config);
-    ImguiBoldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", scaleFactor * 9, &config);
-    ImguiItFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", scaleFactor * 9, &config);
-#endif
+    config.PixelSnapH = true;
+    config.OversampleH = 0;
+    config.OversampleV = 0;
 
-    unsigned char* buffer;
-    int width, height, bytesPerPixel;
-    io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &bytesPerPixel);
 
-    // load image using SOIL
-    // unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * bytesPerPixel, &width, &height, &bytesPerPixel, SOIL_LOAD_AUTO);
-
-    CoreGraphics::TextureCreateInfo texInfo;
-    texInfo.name = "imgui_font_tex"_atm;
-    texInfo.usage = TextureUsage::Sample;
-    texInfo.tag = "system"_atm;
-    texInfo.data = buffer;
-    texInfo.dataSize = width * height * bytesPerPixel;
-    texInfo.type = TextureType::Texture2D;
-    texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    texInfo.width = width;
-    texInfo.height = height;
-
-    state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo);
-    state.fontTexture.mip = 0;
-    state.fontTexture.layer = 0;
-    state.fontTexture.useAlpha = true;
-    io.Fonts->TexID = &state.fontTexture;
-    io.Fonts->ClearTexData();
+    IO::URI mainFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Regular.ttf");
+    IO::URI boldFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Bold.ttf");
+    IO::URI italicFontPath = IO::URI("tool:syswork/data/fonts/Roboto-Italic.ttf");
+    ImguiFont = io.Fonts->AddFontFromFileTTF(mainFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
+    // Generated using https://github.com/aiekick/ImGuiFontStudio/releases/tag/b0.5 from specific icons in https://github.com/h5p/font-awesome/blob/master/fontawesome-webfont.ttf
+    config.MergeMode = true;
+    ImguiIconFont = io.Fonts->AddFontFromFileTTF(IO::URI("tool:syswork/data/fonts/fontawesome-webfont.ttf").LocalPath().AsCharPtr(), scaleFactor * 14, &config);
+    config.MergeMode = false;
+    ImguiBoldFont = io.Fonts->AddFontFromFileTTF(boldFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
+    ImguiItFont = io.Fonts->AddFontFromFileTTF(italicFontPath.LocalPath().AsCharPtr(), scaleFactor * 14, &config);
 
     if (!App::GameApplication::IsEditorEnabled())
     {
@@ -900,8 +1131,6 @@ ImguiContext::Discard()
     CoreGraphics::DisplayDevice::Instance()->RemoveEventHandler(state.displayEventHandler.upcast<CoreGraphics::DisplayEventHandler>());
     state.displayEventHandler = nullptr;
 
-    CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
-
 #ifdef IMGUI_HAS_VIEWPORT
     /// The main window is handled by nebula
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -909,152 +1138,10 @@ ImguiContext::Discard()
     platform_io.Viewports[0]->PlatformWindowCreated = false;
     platform_io.Viewports[0]->PlatformHandle = nullptr;
 #endif
+    ImGui::DestroyPlatformWindows();
     ImGui::DestroyContext();
 }
 
-
-const ImGuiKey NebulaToImguiKeyCodes[] =
-{
-    ImGuiKey_Backspace,      // Code::Back
-    ImGuiKey_Tab,            // Code::Tab
-    ImGuiKey_None,           // Code::Clear (No direct mapping)
-    ImGuiKey_Enter,          // Code::Return
-    ImGuiKey_LeftShift,      // Code::Shift (Assuming Left Shift)
-    ImGuiKey_LeftCtrl,       // Code::Control (Assuming Left Control)
-    ImGuiKey_Menu,           // Code::Menu
-    ImGuiKey_Pause,          // Code::Pause
-    ImGuiKey_CapsLock,       // Code::Capital
-    ImGuiKey_Escape,         // Code::Escape
-    ImGuiKey_None,           // Code::Convert (No direct mapping)
-    ImGuiKey_None,           // Code::NonConvert (No direct mapping)
-    ImGuiKey_None,           // Code::Accept (No direct mapping)
-    ImGuiKey_None,           // Code::ModeChange (No direct mapping)
-    ImGuiKey_Space,          // Code::Space
-    ImGuiKey_PageUp,         // Code::Prior
-    ImGuiKey_PageDown,       // Code::Next
-    ImGuiKey_End,            // Code::End
-    ImGuiKey_Home,           // Code::Home
-    ImGuiKey_LeftArrow,      // Code::Left
-    ImGuiKey_RightArrow,     // Code::Right
-    ImGuiKey_UpArrow,        // Code::Up
-    ImGuiKey_DownArrow,      // Code::Down
-    ImGuiKey_None,           // Code::Select (No direct mapping)
-    ImGuiKey_PrintScreen,    // Code::Print
-    ImGuiKey_None,           // Code::Execute (No direct mapping)
-    ImGuiKey_PrintScreen,    // Code::Snapshot
-    ImGuiKey_Insert,         // Code::Insert
-    ImGuiKey_Delete,         // Code::Delete
-    ImGuiKey_None,           // Code::Help (No direct mapping)
-    ImGuiKey_None,           // Code::LeftWindows (No direct mapping)
-    ImGuiKey_None,           // Code::RightWindows (No direct mapping)
-    ImGuiKey_None,           // Code::Apps (No direct mapping)
-    ImGuiKey_None,           // Code::Sleep (No direct mapping)
-    ImGuiKey_Keypad0,        // Code::NumPad0
-    ImGuiKey_Keypad1,        // Code::NumPad1
-    ImGuiKey_Keypad2,        // Code::NumPad2
-    ImGuiKey_Keypad3,        // Code::NumPad3
-    ImGuiKey_Keypad4,        // Code::NumPad4
-    ImGuiKey_Keypad5,        // Code::NumPad5
-    ImGuiKey_Keypad6,        // Code::NumPad6
-    ImGuiKey_Keypad7,        // Code::NumPad7
-    ImGuiKey_Keypad8,        // Code::NumPad8
-    ImGuiKey_Keypad9,        // Code::NumPad9
-    ImGuiKey_KeypadMultiply, // Code::Multiply
-    ImGuiKey_KeypadAdd,      // Code::Add
-    ImGuiKey_KeypadSubtract, // Code::Subtract
-    ImGuiKey_None,           // Code::Separator (No direct mapping)
-    ImGuiKey_KeypadDecimal,  // Code::Decimal
-    ImGuiKey_KeypadDivide,   // Code::Divide
-    ImGuiKey_F1,             // Code::F1
-    ImGuiKey_F2,             // Code::F2
-    ImGuiKey_F3,             // Code::F3
-    ImGuiKey_F4,             // Code::F4
-    ImGuiKey_F5,             // Code::F5
-    ImGuiKey_F6,             // Code::F6
-    ImGuiKey_F7,             // Code::F7
-    ImGuiKey_F8,             // Code::F8
-    ImGuiKey_F9,             // Code::F9
-    ImGuiKey_F10,            // Code::F10
-    ImGuiKey_F11,            // Code::F11
-    ImGuiKey_F12,            // Code::F12
-    ImGuiKey_NumLock,        // Code::NumLock
-    ImGuiKey_ScrollLock,     // Code::Scroll
-    ImGuiKey_Semicolon,      // Code::Semicolon
-    ImGuiKey_Slash,          // Code::Slash
-    ImGuiKey_GraveAccent,    // Code::Tilde
-    ImGuiKey_LeftBracket,    // Code::LeftBracket
-    ImGuiKey_RightBracket,   // Code::RightBracket
-    ImGuiKey_Backslash,      // Code::BackSlash
-    ImGuiKey_Apostrophe,     // Code::Quote
-    ImGuiKey_Comma,          // Code::Comma
-    ImGuiKey_None,           // Code::Underbar (No direct mapping)
-    ImGuiKey_Period,         // Code::Period
-    ImGuiKey_Equal,          // Code::Equality
-    ImGuiKey_LeftShift,      // Code::LeftShift
-    ImGuiKey_RightShift,     // Code::RightShift
-    ImGuiKey_LeftCtrl,       // Code::LeftControl
-    ImGuiKey_RightCtrl,      // Code::RightControl
-    ImGuiKey_LeftAlt,        // Code::LeftMenu (assuming this maps to Alt)
-    ImGuiKey_RightAlt,       // Code::RightMenu
-    ImGuiKey_None,           // Code::BrowserBack (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::BrowserForward (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::BrowserRefresh (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::BrowserStop (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::BrowserSearch (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::BrowserFavorites (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::BrowserHome (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::VolumeMute (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::VolumeDown (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::VolumeUp (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::MediaNextTrack (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::MediaPrevTrack (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::MediaStop (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::MediaPlayPause (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::LaunchMail (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::LaunchMediaSelect (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::LaunchApp1 (No direct mapping in ImGuiKey)
-    ImGuiKey_None,           // Code::LaunchApp2 (No direct mapping in ImGuiKey)
-    ImGuiKey_0,              // Code::Key0
-    ImGuiKey_1,              // Code::Key1
-    ImGuiKey_2,              // Code::Key2
-    ImGuiKey_3,              // Code::Key3
-    ImGuiKey_4,              // Code::Key4
-    ImGuiKey_5,              // Code::Key5
-    ImGuiKey_6,              // Code::Key6
-    ImGuiKey_7,              // Code::Key7
-    ImGuiKey_8,              // Code::Key8
-    ImGuiKey_9,              // Code::Key9
-    ImGuiKey_A,              // Code::A
-    ImGuiKey_B,              // Code::B
-    ImGuiKey_C,              // Code::C
-    ImGuiKey_D,              // Code::D
-    ImGuiKey_E,              // Code::E
-    ImGuiKey_F,              // Code::F
-    ImGuiKey_G,              // Code::G
-    ImGuiKey_H,              // Code::H
-    ImGuiKey_I,              // Code::I
-    ImGuiKey_J,              // Code::J
-    ImGuiKey_K,              // Code::K
-    ImGuiKey_L,              // Code::L
-    ImGuiKey_M,              // Code::M
-    ImGuiKey_N,              // Code::N
-    ImGuiKey_O,              // Code::O
-    ImGuiKey_P,              // Code::P
-    ImGuiKey_Q,              // Code::Q
-    ImGuiKey_R,              // Code::R
-    ImGuiKey_S,              // Code::S
-    ImGuiKey_T,              // Code::T
-    ImGuiKey_U,              // Code::U
-    ImGuiKey_V,              // Code::V
-    ImGuiKey_W,              // Code::W
-    ImGuiKey_X,              // Code::X
-    ImGuiKey_Y,              // Code::Y
-    ImGuiKey_Z,              // Code::Z
-    ImGuiKey_None,           // Code::NumKeyCodes (No direct mapping, represents total count)
-    ImGuiKey_None            // Code::InvalidKey (No direct mapping)
-};
-
-static bool KeysToRelease[ImGuiKey_COUNT] = { false };
 
 //------------------------------------------------------------------------------
 /**
@@ -1063,15 +1150,16 @@ bool
 ImguiContext::HandleInput(const Input::InputEvent& event)
 {
     ImGuiIO& io = ImGui::GetIO();
+
     switch (event.GetType())
     {
     case InputEvent::KeyDown:
-        io.KeysDown[event.GetKey()] = true;
+        io.AddKeyEvent(NebulaToImguiKeyCodes[event.GetKey()], true);
         if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = true;
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = true;
         return io.WantCaptureKeyboard;
     case InputEvent::KeyUp:
-        KeysToRelease[event.GetKey()] = true;
+        io.AddKeyEvent(NebulaToImguiKeyCodes[event.GetKey()], false);
         if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = false;
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = false;
         return io.WantCaptureKeyboard;                                  // not a bug, this allows keys to be let go even if we are over the UI
@@ -1103,21 +1191,6 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImguiContext::ResetKeyDownState()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    for (uint32_t i = 0; i < ImGuiKey_COUNT; ++i)
-    {
-        if (KeysToRelease[i])
-            io.KeysDown[i] = false;
-        KeysToRelease[i] = false;
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -1160,8 +1233,36 @@ void
 ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
 {
     ImGui::EndFrame();
-                    
-    ImGui::UpdatePlatformWindows();
+    ImguiDragAndDropFiles.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ids::Id32
+AllocateImguiTextureId(const ImguiTextureId& data)
+{
+    Ids::Id32 id = ImguiTextureIdAllocator.Alloc();
+    ImguiTextureIdAllocator.Set(id, data);
+    return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetImguiTextureIdData(Ids::Id32 id, const ImguiTextureId& data)
+{
+    ImguiTextureIdAllocator.Set(id, data);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeallocateImguiTextureId(Ids::Id32 id)
+{
+    ImguiTextureIdAllocator.Dealloc(id);
 }
 
 //------------------------------------------------------------------------------
@@ -1176,11 +1277,11 @@ ImGuiCloseButton(bool& toggle, int id)
     ImGui::SameLine();
     ImFont* font = ImGui::GetFont();
     ImGuiStyle& style = ImGui::GetStyle();
-    ImVec2 closeButtonSize = ImVec2(font->FontSize, font->FontSize) + style.FramePadding * 2.0f;
+    ImVec2 closeButtonSize = ImVec2(style.FontSizeBase, style.FontSizeBase) + style.FramePadding * 2.0f;
     ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - closeButtonSize.x, 0.0f));
     ImGui::SameLine();
     ImGui::PushID(id + 0xAAA);
-    float cross_extent = font->FontSize * 0.5f * 0.7071f - 1.0f;
+    float cross_extent = style.FontSizeBase * 0.5f * 0.7071f - 1.0f;
     ImVec2 closeButtonBegin = ImGui::GetCursorScreenPos();
     ImVec2 closeButtonEnd = closeButtonBegin + closeButtonSize;
     ImVec2 center = (closeButtonBegin + closeButtonEnd) * 0.5f;
@@ -1193,12 +1294,34 @@ ImGuiCloseButton(bool& toggle, int id)
     if (ImGui::IsItemHovered())
     {
         ImU32 col = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
-        draw_list->AddCircleFilled(center + ImVec2(0.5f, 0.5f), font->FontSize * 0.5f, col);
+        draw_list->AddCircleFilled(center + ImVec2(0.5f, 0.5f), style.FontSizeBase * 0.5f, col);
     }
     ImU32 cross_col = ImGui::GetColorU32(ImGuiCol_Text);
     draw_list->AddLine(center + ImVec2(+cross_extent, +cross_extent), center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
     draw_list->AddLine(center + ImVec2(+cross_extent, -cross_extent), center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
     ImGui::PopID();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ImGuiToggleButton(const char* label, bool toggle)
+{
+    if (toggle)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+    }
+
+    bool pressed = ImGui::Button(label);
+
+    if (toggle)
+        ImGui::PopStyleColor(3);
+
+    return pressed;
 }
 
 } // namespace Dynui

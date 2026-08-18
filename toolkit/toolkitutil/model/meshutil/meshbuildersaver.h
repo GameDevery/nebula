@@ -12,27 +12,33 @@
 #include "io/stream.h"
 #include "system/byteorder.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/mesh.h"
+
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
 class MeshBuilderSaver
 {
 public:
-    /// save nvx3 file
-    static bool Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, Platform::Code platform);
+    /// Save flatbuffers mesh file
+    static std::unique_ptr<ToolkitUtil::MeshResourceT> PackImport(const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilder*>& physicsMeshes, Platform::Code platform);
+    /// Save binary mesh file
+    static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::MeshResourceT* resource, Platform::Code platform);
 private:
 
     /// write header to stream using nvx3
-    static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
+    static void WriteHeader(const Ptr<IO::Stream>& stream, const ToolkitUtil::MeshResourceT* resource, const System::ByteOrder& byteOrder);
     /// Write meshes
-    static void WriteMeshes(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
+    static void WriteMeshes(const Ptr<IO::Stream>& stream, const ToolkitUtil::MeshResourceT* resource, const System::ByteOrder& byteOrder);
 
     /// write the vertices to stream
-    static void WriteVertices(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
+    static void WriteVertices(const Ptr<IO::Stream>& stream, const ToolkitUtil::MeshResourceT* resource, const System::ByteOrder& byteOrder);
     /// write the triangles to stream
-    static void WriteTriangles(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
+    static void WriteTriangles(const Ptr<IO::Stream>& stream, const ToolkitUtil::MeshResourceT* resource, const System::ByteOrder& byteOrder);
     /// Write meshlets
-    static void WriteMeshlets(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
+    static void WriteMeshlets(const Ptr<IO::Stream>& stream, const ToolkitUtil::MeshResourceT* resource, const System::ByteOrder& byteOrder);
 };
 
 } // namespace ToolkitUtil

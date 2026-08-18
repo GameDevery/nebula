@@ -28,8 +28,12 @@ fips_begin_lib(toolkitutil)
 
         fips_dir(asset)
             fips_files(
-                assetexporter.cc
-                assetexporter.h
+                assetbatchprocessor.cc
+                assetbatchprocessor.h
+				assetimporter.cc
+				assetimporter.h
+				assetpackager.cc
+				assetpackager.h
             )
         fips_dir(filedb)
             fips_files(
@@ -72,19 +76,6 @@ fips_begin_lib(toolkitutil)
                 skeletonbuildersaver.cc
                 skeletonbuildersaver.h
             )
-    IF(FIPS_WINDOWS)
-        SET(SRCSX_PL        
-        directxtexconversionjob.cc
-        directxtexconversionjob.h
-        compressonatorconversionjob.cc
-        compressonatorconversionjob.h
-        )
-    ELSE()
-    SET(SRCSX_PL        
-        compressonatorconversionjob.cc
-        compressonatorconversionjob.h
-        )
-    ENDIF()
     IF(NOT N_MINIMAL_TOOLKIT)
         fips_dir(texutil)
             fips_files(
@@ -92,21 +83,20 @@ fips_begin_lib(toolkitutil)
                 # cubefilterer.h
                 # imageconverter.cc
                 # imageconverter.h
-                textureattrs.cc
-                textureattrs.h
-                textureattrtable.cc
-                textureattrtable.h
-                textureconversionjob.cc
-                textureconversionjob.h
+                # textureattrs.cc
+                # textureattrs.h
+                # textureattrtable.cc
+                # textureattrtable.h
+                # textureconversionjob.cc
+                # textureconversionjob.h
                 textureconverter.cc
                 textureconverter.h
-                ${SRCSX_PL}
             )
     ENDIF()     
         fips_dir(model/import/base)
             fips_files(
-                modelexporter.cc
-                modelexporter.h 
+                modelimporter.cc
+                modelimporter.h 
                 scene.cc
                 scene.h
                 scenenode.cc
@@ -117,8 +107,8 @@ fips_begin_lib(toolkitutil)
 
         fips_dir(model/import/fbx)
             fips_files(
-                nfbxexporter.cc 
-                nfbxexporter.h
+                fbxfileimporter.cc 
+                fbxfileimporter.h
             )
 
         fips_dir(model/import/fbx/node)
@@ -139,10 +129,10 @@ fips_begin_lib(toolkitutil)
             fips_files(
                 gltfdata.h
                 gltfreader.cc
-                ngltfexporter.cc
-                ngltfexporter.h
-                ngltfmaterialexporter.cc
-                ngltfmaterialexporter.h
+                gltffileimporter.cc
+                gltffileimporter.h
+                gltffilematerialextractor.cc
+                gltffilematerialextractor.h
             )
             fips_dir(model/import/gltf/node)
                 fips_files(
@@ -218,4 +208,9 @@ ENDIF()
                 particleexporter.cc
                 particleexporter.h
             )
+
+
+	fips_dir(flatbuffers)
+		nebula_flatc(LOCAL anim.fbs audio.fbs material.fbs mesh.fbs model.fbs particle.fbs physics.fbs scene.fbs skeleton.fbs texture.fbs)
+
 fips_end_lib()

@@ -243,7 +243,7 @@ DownsamplingContext::Setup()
         DownsampleCsLight::DownsampleUniforms::STRUCT constants;
         constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));//TextureGetNumMips(FrameScript_default::Texture_LightBuffer()) - 1;
         constants.NumGroups = dispatchX * dispatchY;
-        for (size_t i = 0; i < constants.Mips; i++)
+        for (size_t i = 0; i <= constants.Mips; i++)
         {
             constants.Dimensions[i][0] = (viewport.width() - 1) >> i;
             constants.Dimensions[i][1] = (viewport.height() - 1)  >> i;
@@ -266,7 +266,7 @@ DownsamplingContext::Setup()
 
         constants.Mips = Math::max(log2(viewport.width()), log2(viewport.height()));//TextureGetNumMips(FrameScript_default::Texture_Depth()) - 1;
         constants.NumGroups = dispatchX * dispatchY;
-        for (size_t i = 0; i < constants.Mips; i++)
+        for (size_t i = 0; i <= constants.Mips; i++)
         {
             constants.Dimensions[i][0] = (viewport.width() - 1) >> i;
             constants.Dimensions[i][1] = (viewport.height() - 1) >> i;

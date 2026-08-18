@@ -10,9 +10,11 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "ids/idallocator.h"
+#include "util/stringatom.h"
 #include "resources/resourceid.h"
 #include "core/rttimacros.h"
 #include "memory/rangeallocator.h"
+#include "coreanimation/infinitytype.h"
 #include <functional>
 namespace Models
 {
@@ -62,10 +64,41 @@ struct NodeInstanceRange
     SizeT begin, end;
 };
 
+struct JointMask
+{
+    Util::StringAtom name;
+    Util::FixedArray<float> weights;
+};
+
+struct Take
+{
+    struct Clip
+    {
+        Util::StringAtom name;
+        float start, end;
+        CoreAnimation::InfinityType::Code preInfinity, postInfinity;
+
+        struct Event
+        {
+            Util::StringAtom name;
+            float time;
+        };
+
+        Util::FixedArray<Event> events;
+    };
+
+    Util::FixedArray<Clip> clips;
+};
+
 struct ModelCreateInfo
 {
     Math::bbox boundingBox;
     Util::Array<Models::ModelNode*> nodes;
+    Util::FixedArray<JointMask> jointMasks;
+    Util::FixedArray<Take> takes;
+#if WITH_NEBULA_EDITOR
+    Util::Dictionary<Util::StringAtom, Models::ModelNode*> nodeLookup;
+#endif
 };
 
 /// create model (resource)
@@ -78,15 +111,30 @@ const Util::Array<Models::ModelNode*>& ModelGetNodes(const ModelId id);
 /// Get model bounding box
 const Math::bbox& ModelGetBoundingBox(const ModelId id);
 
+#if WITH_NEBULA_EDITOR
+/// Get model node lookup table
+const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodeTable(const ModelId id);
+#endif
+
 enum
 {
     Model_BoundingBox,
-    Model_Nodes
+    Model_Nodes,
+    Model_JointMasks,
+    Model_Takes,
+#if WITH_NEBULA_EDITOR
+    Model_NodeLookup
+#endif
 };
 
 typedef Ids::IdAllocator<
     Math::bbox,
-    Util::Array<Models::ModelNode*>
+    Util::Array<Models::ModelNode*>,
+    Util::FixedArray<JointMask>,
+    Util::FixedArray<Take>
+#if WITH_NEBULA_EDITOR
+    , Util::Dictionary<Util::StringAtom, Models::ModelNode*>
+#endif
 > ModelAllocator;
 extern ModelAllocator modelAllocator;
 } // namespace Models

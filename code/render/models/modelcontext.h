@@ -76,6 +76,15 @@ public:
         , std::function<void()> finishedCallback
         , const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
     );
+
+    /// Setup from a model resource
+    static void Setup(
+        const Graphics::GraphicsEntityId id
+        , const IO::URN& urn
+        , const Util::StringAtom& tag
+        , std::function<void()> finishedCallback
+        , const Graphics::StageMask stage = Graphics::PRIMARY_STAGE_MASK | Graphics::SHADOW_STAGE_MASK
+    );
     /// Setup with a mesh and material
     static void Setup(
         const Graphics::GraphicsEntityId id
@@ -107,7 +116,14 @@ public:
     static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
     /// Changes the material for the first node in the model
     static void ChangeMaterial(const Graphics::GraphicsEntityId id, const Materials::MaterialId material);
-    /// get model
+    /// Changes the material for a specific node in the model, use GetNodeIndex to lookup by name
+    static void ChangeMaterial(const Graphics::GraphicsEntityId id, IndexT node, const Materials::MaterialId material);
+
+#if WITH_NEBULA_EDITOR
+    static void ChangeMaterialOnModels(const Models::ModelId mdlId, IndexT node, const Materials::MaterialId material);
+#endif
+    
+    /// Get model
     static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
 
     /// set the transform for a model
@@ -224,8 +240,8 @@ public:
     /// Get if model is loaded
     static bool IsLoaded(const Graphics::GraphicsEntityId id);
 
-    static Threading::AtomicCounter ConstantsUpdateCounter;
-    static Threading::AtomicCounter TransformsUpdateCounter;
+    static Threading::Interlocked::AtomicCounter ConstantsUpdateCounter;
+    static Threading::Interlocked::AtomicCounter TransformsUpdateCounter;
 
 private:
     friend class Visibility::VisibilityContext;

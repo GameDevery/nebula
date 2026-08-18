@@ -14,20 +14,25 @@
 #include "io/stream.h"
 #include "system/byteorder.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/anim.h"
+
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
 class AnimBuilderSaver
 {
 public:
+    /// Save flatbuffers file
+    static std::unique_ptr<ToolkitUtil::AnimResourceT> PackImport(const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform);
     /// Save NAX3 file
-    static bool Save(const IO::URI& uri, const Util::Array<AnimBuilder>& animBuilders, Platform::Code platform);
-
+    static bool SaveBinary(const IO::URI& uri, const ToolkitUtil::AnimResourceT* resource, Platform::Code platform);
 private:
     /// Write header to stream
-    static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
+    static void WriteHeader(const Ptr<IO::Stream>& stream, const ToolkitUtil::AnimResourceT* resource, const System::ByteOrder& byteOrder);
     /// Write anim header to stream
-    static void WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
+    static void WriteAnimations(const Ptr<IO::Stream>& stream, const ToolkitUtil::AnimResourceT* resource, const System::ByteOrder& byteOrder);
 };
 
 } // namespace ToolkitUtil

@@ -35,6 +35,7 @@
 #include "ids/id.h"
 #include "util/stringatom.h"
 #include "io/stream.h"
+#include "io/urn.h"
 #include "util/set.h"
 #include "resource.h"
 #include "threading/safequeue.h"
@@ -50,7 +51,8 @@ enum LoadFlags
 {
     None = 0x0,
     Create = 0x1,
-    Update = 0x2
+    Update = 0x2,
+    Reload = 0x4
 };
 __ImplementEnumBitOperators(LoadFlags);
 
@@ -78,7 +80,9 @@ public:
     void ClearPendingUnloads();
 
     /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-    Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
+    Resources::ResourceId CreateResource(const IO::URI& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
+    /// Create a resoujrce using URN, the loader itself decides how to resolve the path
+    Resources::ResourceId CreateResource(const IO::URN& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag
@@ -137,6 +141,16 @@ public:
     {
         Ptr<IO::Stream> stream;
         void* data;
+
+        _StreamData()
+            : stream(nullptr)
+            , data(nullptr)
+        {}
+
+        _StreamData(const Ptr<IO::Stream>& stream, void* data)
+            : stream(stream)
+            , data(data)
+        {}
     };
 
     struct ResourceInitOutput
@@ -253,7 +267,7 @@ protected:
     /// Stream resource
     virtual ResourceStreamOutput StreamResource(const ResourceLoadJob& job);
     /// perform a reload
-    virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
+    virtual ResourceInitOutput ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream);
 
     /// Create load mask based on LOD. This will be used to determine if the resoure is fully loaded
     virtual uint LodMask(const _StreamData& stream, float lod, bool async) const;
@@ -276,7 +290,7 @@ protected:
 
     struct _PlaceholderResource
     {
-        Resources::ResourceName placeholderName;
+        IO::URI placeholderName;
         Resources::ResourceId placeholderId;
     };
     Util::FixedArray<_PlaceholderResource> placeholders;
@@ -285,12 +299,12 @@ protected:
     Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
 
     /// these types need to be properly initiated in a subclass Setup function
-    Util::StringAtom placeholderResourceName;
-    Util::StringAtom failResourceName;
+    IO::URI placeholderResourceName;
+    IO::URI failResourceName;
 
     Resources::ResourceId placeholderResourceId;
     Resources::ResourceId failResourceId;
-
+    Util::StringAtom loaderExtension;
     bool async;
 
     Ptr<ResourceLoaderThread> streamerThread;

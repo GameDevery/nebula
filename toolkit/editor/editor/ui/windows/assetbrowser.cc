@@ -15,6 +15,7 @@
 #include "timing/calendartime.h"
 #include "editor/tools/pathconverter.h"
 #include "io/filewatcher.h"
+#include "io/assignregistry.h"
 #include "asseteditor/particleasseteditor.h"
 
 using namespace Editor;
@@ -55,6 +56,7 @@ public:
     AssetBrowser* browser;
 
     volatile float progress = 0.0f;
+
     /// 
     void DoWork() override
     {
@@ -62,15 +64,11 @@ public:
         Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
         ToolkitUtil::Logger logger;
         ToolkitUtil::FileDB fileDB;
-        fileDB.SetDatabaseURI(IO::URI("int:/filedb.sqlite"));
+        fileDB.SetDatabaseURI(IO::URI("int:filedb.sqlite"));
         fileDB.Open(logger, false);
-        this->browser->ScanFolderTree(fileDB, "export", "export:", false);
-        this->progress = 0.25f;
-        this->browser->ScanFolderTree(fileDB, "sysexport", "export:", true);
+        this->browser->ScanFolderTree(fileDB, "work", "proj:work", false);
         this->progress = 0.5f;
-        this->browser->ScanFolderTree(fileDB, "work", "proj:work/", false);
-        this->progress = 0.75f;
-        this->browser->ScanFolderTree(fileDB, "syswork", "tool:syswork/", false);
+        this->browser->ScanFolderTree(fileDB, "syswork", "tool:syswork", false);
         this->progress = 1.0f;
 
         this->browser->isDoneRefreshingCaches.Set();
@@ -112,6 +110,7 @@ static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
     nullptr,  
     nullptr,  
     nullptr,  
+    ParticleNew,
     nullptr,  
     nullptr,  
     nullptr,  
@@ -119,12 +118,6 @@ static const NewFunc NewFuncs[(uint)ToolkitUtil::FileType::Other + 1] =
     nullptr,  
     nullptr,  
     nullptr,  
-    nullptr,  
-    nullptr,  
-    nullptr,  
-    nullptr,  
-    nullptr,
-    ParticleNew,  
     nullptr
 };
 
@@ -429,18 +422,8 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
     {
         switch (type)
         {
-            case ToolkitUtil::FileType::FBX:
-            case ToolkitUtil::FileType::GLTF:
-            case ToolkitUtil::FileType::Model:
+            case ToolkitUtil::FileType::Asset:
                 return AssetEditor::AssetType::Model;
-            case ToolkitUtil::FileType::Mesh:
-                return AssetEditor::AssetType::Mesh;
-            case ToolkitUtil::FileType::Texture:
-                return AssetEditor::AssetType::Texture;
-            case ToolkitUtil::FileType::Skeleton:
-                return AssetEditor::AssetType::Skeleton;
-            case ToolkitUtil::FileType::Animation:
-                return AssetEditor::AssetType::Animation;
             case ToolkitUtil::FileType::Surface:
                 return AssetEditor::AssetType::Material;
             case ToolkitUtil::FileType::Particle:
@@ -456,12 +439,17 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         }
     };
 
-    static const auto AddDragSourceForFileUri = [](const IO::URI& file)
+    static const auto AddDragSourceForFileUri = [this](const IO::URI& file)
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            Util::String filePath = file.GetHostAndLocalPath();
+            ToolkitUtil::FileDB::FolderInfo folder;
+            this->fileDB.GetFolderInfo(this->activeFileTree, folder);
+            static Util::String filePath;
+            filePath = file.LocalPath().StripSubstring(IO::URI(folder.name + "/assets").LocalPath());
+            filePath.StripFileExtension();
             ImGui::SetDragDropPayload("resource", filePath.AsCharPtr(), sizeof(char) * filePath.Length() + 1);
+            ImGui::Text(filePath.AsCharPtr());
             ImGui::EndDragDropSource();
         }
     };
@@ -578,7 +566,7 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
             {        
                 ImGuiStyle& style = ImGui::GetStyle();
                 int numFiles = visibleFiles.Size();
-                float windowVisibleX = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+                float windowVisibleX = ImGui::GetWindowPos().x + ImGui::GetContentRegionAvail().x;
                 static int itemSize = 50;
                 ImGui::SliderInt("Zoom", &itemSize, 25, 200);
                 int n = 0;
@@ -634,7 +622,10 @@ AssetBrowser::DisplaySelectedFolder(const Util::String& filter)
         {
             IO::URI uri = fileToOpen.filePath;
             Ptr<AssetEditor> assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
-            assetEditor->Open(uri.GetHostAndLocalPath(), FileEntryTypeToAssetType(fileToOpen.type));
+
+            Util::String rootFolderPath = this->fileDB.GetFolderPath(this->activeFileTree);
+            
+            assetEditor->Open(uri, rootFolderPath, FileEntryTypeToAssetType(fileToOpen.type));
         }    
     }
 }
@@ -703,7 +694,7 @@ AssetBrowser::DisplayFileTree()
         {
             displayName.Append(" (zip)");
         }
-        ImGui::Button(displayName.AsCharPtr());
+        Dynui::ImGuiToggleButton(displayName.AsCharPtr(), this->activeFileTree == root.id);
         if (ImGui::IsItemClicked())
         {
             this->activeFileTree = root.id;
@@ -890,44 +881,33 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
     ext.ToLower();
     
     // Model files
-    if (ext == "n3")
+    if (ext == "nasset")
     {
-        return ToolkitUtil::FileType::Model;
+        return ToolkitUtil::FileType::Asset;
     }
 
-    if (ext == "nvx2" || ext == "nvx")
-    {
-        return ToolkitUtil::FileType::Mesh;
-    }
-    
     // Texture files
-    if (ext == "dds" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "tga" || ext == "bmp")
+    if (ext == "natex")
     {
         return ToolkitUtil::FileType::Texture;
     }
     
     // Surface/Material files
-    if (ext == "sur" || ext == "material")
+    if (ext == "namat")
     {
         return ToolkitUtil::FileType::Surface;
     }
-    
+
+    // Particle files
+    if (ext == "napar")
+    {
+        return ToolkitUtil::FileType::Particle;
+    }
+
     // Audio files
-    if (ext == "ogg" || ext == "wav" || ext == "mp3" || ext == "flac")
+    if (ext == "naaud")
     {
         return ToolkitUtil::FileType::Audio;
-    }
-    
-    // Skeleton files
-    if (ext == "nsk")
-    {
-        return ToolkitUtil::FileType::Skeleton;
-    }
-    
-    // Animation files
-    if (ext == "nax")
-    {
-        return ToolkitUtil::FileType::Animation;
     }
     
     // Frame files
@@ -954,11 +934,6 @@ AssetBrowser::DetermineFileType(const Util::String& extension)
         return ToolkitUtil::FileType::NavMesh;
     }
 
-    // Particle files
-    if (ext == "par")
-    {
-        return ToolkitUtil::FileType::Particle;
-    }
     
     // Default to Other for unknown extensions
     return ToolkitUtil::FileType::Other;

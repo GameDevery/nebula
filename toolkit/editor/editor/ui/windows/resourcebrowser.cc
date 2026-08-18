@@ -33,7 +33,8 @@ ResourceBrowser::~ResourceBrowser()
 void 
 ResourceBrowser::Run(SaveMode save)
 {
-    static Dynui::ImguiTextureId selectedTex;
+    static Ids::Id32 imguiTexId = Dynui::AllocateImguiTextureId({});
+    
     ImVec2 size = ImGui::GetContentRegionAvail();
 
     if (ImGui::BeginTable("Resource Browser Contents", 2, ImGuiTableFlags_Resizable))
@@ -43,10 +44,10 @@ ResourceBrowser::Run(SaveMode save)
         static int current = -1;
         if (ImGui::BeginChild("List", ImVec2{ 0, 0 }, false, ImGuiWindowFlags_NoScrollbar))
         {
-            ImGui::PushFont(Dynui::ImguiBoldFont);
+            ImGui::PushFont(Dynui::ImguiBoldFont, 0.0f);
             ImGui::Text("Textures");
             ImGui::PopFont();
-            if (ImGui::BeginTable("Textures###Table", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp))
+            if (ImGui::BeginTable("Textures###Table", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit))
             {
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Dimensions");
@@ -96,7 +97,7 @@ ResourceBrowser::Run(SaveMode save)
         if (current != -1)
         {
             CoreGraphics::TextureIdLock _0(CoreGraphics::TrackedTextures[current]);
-            selectedTex.nebulaHandle = CoreGraphics::TrackedTextures[current];
+
             CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(CoreGraphics::TrackedTextures[current]);
             CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
             float ratio = dims.height / float(dims.width);
@@ -113,6 +114,20 @@ ResourceBrowser::Run(SaveMode save)
             static float minRange = 0, maxRange = 1;
             static bool overlay = false;
             static float relativeWidth = 1.0f, relativeHeight = 1.0f;
+            
+            Dynui::ImguiTextureId textureInfo;
+            textureInfo.nebulaHandle = CoreGraphics::TrackedTextures[current];
+            textureInfo.layer = layer;
+            textureInfo.mip = mip;
+            textureInfo.useAlpha = alpha;
+            textureInfo.useRange = range;
+            textureInfo.rangeMin = minRange;
+            textureInfo.rangeMax = maxRange;
+            textureInfo.red = red;
+            textureInfo.green = green;
+            textureInfo.blue = blue;
+            textureInfo.alpha = a;
+            Dynui::SetImguiTextureIdData(imguiTexId, textureInfo);
 
             if (ImGui::BeginChild("Preview", ImVec2{ 0, 0 }))
             {
@@ -127,7 +142,8 @@ ResourceBrowser::Run(SaveMode save)
                         ImGui::DragFloat("Viewport Height Factor", &relativeHeight, 0.1f, 0.0f, 1.0f, "%.2f");
                     }
                 }
-                ImGui::Image(&selectedTex, ImVec2{ (float)remainder.x, (float)remainder.x * ratio });
+                ImTextureRef ref {imguiTexId};
+                ImGui::Image(ref, ImVec2{ (float)remainder.x, (float)remainder.x * ratio });
                 if (overlay)
                 {
                     ImVec2 min = ImGui::GetItemRectMin();
@@ -164,16 +180,8 @@ ResourceBrowser::Run(SaveMode save)
             }
             ImGui::EndChild();
 
-            selectedTex.layer = layer;
-            selectedTex.mip = mip;
-            selectedTex.useAlpha = alpha;
-            selectedTex.useRange = range;
-            selectedTex.rangeMin = minRange;
-            selectedTex.rangeMax = maxRange;
-            selectedTex.red = red;
-            selectedTex.green = green;
-            selectedTex.blue = blue;
-            selectedTex.alpha = a;
+
+
         }
         else
         {

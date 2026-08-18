@@ -9,6 +9,7 @@
 #include "coregraphics/resourcetable.h"
 #include "vksampler.h"
 #include "vkgraphicsdevice.h"
+#include "coregraphics/pipeline.h"
 
 namespace Vulkan
 {
@@ -226,7 +227,7 @@ ShaderSetup(
     Util::Dictionary<uint32_t, ResourceTableLayoutCreateInfo> layoutCreateInfos;
     uint32_t numsets = 0;
 
-        // always create push constant range in layout, making all shaders using push constants compatible
+    // always create push constant range in layout, making all shaders using push constants compatible
     uint32_t maxPushConstantBytes = CoreGraphics::MaxPushConstantSize;
     uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
     constantRange.Resize(NumShaders); // one per shader stage
@@ -722,12 +723,12 @@ const ShaderId
 CreateShader(const GPULangShaderCreateInfo& info)
 {
     Ids::Id32 id = shaderAlloc.Alloc();
+
     VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id);
     VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id);
     VkShaderRuntimeInfo& runtimeInfo = shaderAlloc.Get<Shader_RuntimeInfo>(id);
 
-    ShaderId ret = id;
-
+    reflectionInfo.signature = info.loader->signature;
     setupInfo.id = ShaderIdentifier::FromName(info.name);
     setupInfo.name = info.name;
     setupInfo.dev = Vulkan::GetCurrentDevice();
@@ -746,7 +747,7 @@ CreateShader(const GPULangShaderCreateInfo& info)
         setupInfo.constantBindings
     );
 
-   
+
     for (auto& [name, object] : info.loader->nameToObject)
     {
         if (object->type == GPULang::Serialize::Type::VariableType)
@@ -786,7 +787,7 @@ CreateShader(const GPULangShaderCreateInfo& info)
 
             // make an ID which is the shader id and program id
             ShaderProgramId shaderProgramId;
-            shaderProgramId.shader = ret.id;
+            shaderProgramId.shader = id;
             shaderProgramId.program = programId;
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
@@ -795,12 +796,12 @@ CreateShader(const GPULangShaderCreateInfo& info)
     for (auto& set : reflectionInfo.uniformBuffersPerSet)
     {
         if (set.IsEmpty()) continue;
-        
+
         set.SortWithFunc(
             [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
-            {
-                return lhs.binding < rhs.binding;
-            }
+        {
+            return lhs.binding < rhs.binding;
+        }
         );
     }
 
@@ -809,6 +810,9 @@ CreateShader(const GPULangShaderCreateInfo& info)
 #if __NEBULA_HTTP__
     //res->debugState = res->CreateState();
 #endif
+
+    ShaderId ret = id;
+ 
     return ret;
 }
 
@@ -827,6 +831,7 @@ DeleteShader(const ShaderId id)
         VkShaderProgramSetupInfo& progSetup = shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(runtime.programMap.ValueAtIndex(i).programId);
         VkShaderProgramRuntimeInfo& progRuntime = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(runtime.programMap.ValueAtIndex(i).programId);
         VkShaderProgramDiscard(progSetup, progRuntime, progRuntime.pipeline);
+        shaderProgramAlloc.Dealloc(runtime.programMap.ValueAtIndex(i).programId);
     }
     runtime.programMap.Clear();
 }
@@ -840,6 +845,88 @@ DestroyShader(const ShaderId id)
     DeleteShader(id);
     shaderAlloc.Dealloc(id.id);
 }
+
+#if WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ReloadShader(const ShaderId id, const GPULangShaderCreateInfo& info)
+{
+    VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id.id);
+    if (info.loader->signature != reflectionInfo.signature)
+    {
+        return false;
+    }
+
+    // Discard programs, but don't throw away pipelines and bindings
+    VkShaderSetupInfo& setup = shaderAlloc.Get<Shader_SetupInfo>(id.id);
+    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(id.id);
+    for (IndexT i = 0; i < runtime.programMap.Size(); i++)
+    {
+        VkShaderProgramSetupInfo& progSetup = shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(runtime.programMap.ValueAtIndex(i).programId);
+        VkShaderProgramRuntimeInfo& progRuntime = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(runtime.programMap.ValueAtIndex(i).programId);
+        VkShaderProgramDiscard(progSetup, progRuntime, progRuntime.pipeline);
+    }
+
+    for (auto& [name, object] : info.loader->nameToObject)
+    {
+        if (object->type == GPULang::Serialize::Type::ProgramType)
+        {
+            auto program = (GPULang::Deserialize::Program*)object;
+
+            Util::String mask;
+            for (size_t i = 0; i < program->annotationCount; i++)
+            {
+                auto annot = Util::String(program->annotations[i].name, program->annotations[i].nameLength);
+                if (annot == "Mask")
+                    mask = Util::String(program->annotations[i].data.s.string, program->annotations[i].data.s.length);
+            }
+            Util::String name = Util::String(program->name, program->nameLength);
+            IndexT programIndex = runtime.programMap.FindIndex(CoreGraphics::ShaderFeatureMask(mask.IsEmpty() ? name : mask));
+            if (programIndex != InvalidIndex)
+            {
+                Ids::Id32 programId = runtime.programMap.ValueAtIndex(programIndex).programId;
+                VkShaderProgramSetup(programId, info.name, program, setup.pipelineLayout);
+            }
+            else
+            {
+                n_printf("[Shaders] Reloaded shader %s has a new program %s. This program will not be loaded. Please restart the engine to see this change.\n", info.name.Value(), name.AsCharPtr());
+            }
+        }
+    }
+
+    // The next step is to invalidate all subtrees where the new shader programs have been created
+    CoreGraphics::InvalidateGraphicsPipelineCache();
+
+    // Then, loop over programs again and invalidate their pipelines (they might pick from the cache, so has to happen after)
+    for (const auto& kvp : runtime.programMap)
+    {
+        CoreGraphics::InvalidatePipelines(kvp.Value());
+    }
+    
+
+    for (auto& set : reflectionInfo.uniformBuffersPerSet)
+    {
+        if (set.IsEmpty()) continue;
+
+        set.SortWithFunc(
+            [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
+        {
+            return lhs.binding < rhs.binding;
+        }
+        );
+    }
+
+    delete info.loader;
+
+#if __NEBULA_HTTP__
+    //res->debugState = res->CreateState();
+#endif
+
+    return true;
+}
+#endif
 
 //------------------------------------------------------------------------------
 /**

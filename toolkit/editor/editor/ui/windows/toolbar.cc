@@ -7,6 +7,7 @@
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
 #include "editor/cmds.h"
+#include "dynui/nebula_icons.h"
 
 using namespace Editor;
 
@@ -51,9 +52,13 @@ Toolbar::Run(SaveMode save)
 
     if (ImGui::Button("Play")) { PlayGame(); }
     ImGui::SameLine();
-    if (ImGui::Button("Pause")) { PauseGame(); }
+    if (ImGui::Button(ICON_ttf_PAUSE_CIRCLE)) { PauseGame(); }
     ImGui::SameLine();
-    if (ImGui::Button("Stop")) { StopGame(); }
+    if (ImGui::Button(ICON_ttf_STOP_CIRCLE)) { StopGame(); }
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleVar();
+    ImGui::PopFont();
 }
 
 } // namespace Presentation

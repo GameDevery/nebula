@@ -1,0 +1,37 @@
+//------------------------------------------------------------------------------
+//
+//    Model import type, root of mesh, scene, anim, skeleton and physics
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+include "scene.fbs";
+include "mesh.fbs";
+include "skeleton.fbs";
+include "anim.fbs";
+include "physics.fbs";
+namespace ToolkitUtil;
+
+enum OptimizationFlags : uint
+{
+	None = 0x0,
+	RemoveRedundantVertices = 0x1,
+	CalculateNormals = 0x2,
+	FlipUVs = 0x4,
+	CalculateTangentFrame = 0x8,
+	CalculateRigidSkinning = 0x10,
+	MergeNodesWithSharedMaterial = 0x20
+}
+
+table ModelAsset
+{
+	scene : SceneResource;
+	mesh : MeshResource;
+	skeleton : SkeletonResource;
+	animation : AnimResource;
+	physics : PhysicsResource;
+	flags : OptimizationFlags;
+}
+
+root_type ModelAsset;
+file_identifier "MOAS";
+file_extension "nasset";

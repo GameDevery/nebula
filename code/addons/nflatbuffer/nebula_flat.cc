@@ -14,7 +14,7 @@ namespace flatbuffers
 Flat::Mat4 Pack(const Math::mat4& v)
 {
     Flat::Mat4 V;
-    v.store(V.mutable_mat4()->data());
+    v.storeu(V.mutable_mat4()->data());
     return V;
 }
 
@@ -24,8 +24,32 @@ Flat::Mat4 Pack(const Math::mat4& v)
 Math::mat4 UnPack(const Flat::Mat4& v)
 {
     Math::mat4 m;
-    m.load(v.mat4()->data());
+    m.loadu(v.mat4()->data());
     return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::BoundingBox
+Pack(const Math::bbox& v)
+{
+    Flat::BoundingBox ret;
+    v.center().storeu3(ret.mutable_center()->data());
+    v.extents().storeu(ret.mutable_extents()->data());
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::bbox
+UnPack(const Flat::BoundingBox& v)
+{
+    Math::vec3 center, extents;
+    center.loadu(v.center()->data());
+    extents.loadu(v.extents()->data());
+    return Math::bbox(center, extents);
 }
 
 //------------------------------------------------------------------------------

@@ -233,11 +233,17 @@ LoadFloat(const Ptr<IO::BXmlReader>& reader, const char* name, float& value, con
 void
 MaterialLoader::Setup()
 {
-    this->placeholderResourceName = "syssur:placeholder.sur";
-    this->failResourceName = "syssur:error.sur";
+    this->placeholderResourceName = "sysmat:placeholder.sur";
+    this->failResourceName = "sysmat:error.sur";
+    this->loaderExtension = "sur";
 
-    // Run generated setup code
-    MaterialTemplatesGPULang::SetupMaterialTemplates();
+    // Run generated setup code, terrible hack because in this transition period we have two material loaders
+    static bool TemplatesSetup = false;
+    if (!TemplatesSetup)
+    {
+        MaterialTemplatesGPULang::SetupMaterialTemplates();
+        TemplatesSetup = true;
+    }
 
     // Create binding buffer
     CoreGraphics::BufferCreateInfo materialBindingInfo;

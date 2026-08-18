@@ -1,0 +1,18 @@
+//------------------------------------------------------------------------------
+//
+//    Material import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+
+namespace ToolkitUtil;
+
+table MaterialResource
+{
+	template_name: string;
+	value_names : [string];
+	values : [string];
+}
+
+root_type MaterialResource;
+file_identifier "MATR";
+file_extension "namat";

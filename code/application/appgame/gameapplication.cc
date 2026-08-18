@@ -104,6 +104,9 @@ GameApplication::Open()
         // setup io subsystem
         this->ioServer = IoServer::Create();
         this->ioServer->MountStandardArchives();
+#ifdef HAS_EMBEDDED_EXPORT
+        this->ioServer->MountEmbeddedArchive("embed:///export");
+#endif
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
 

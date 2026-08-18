@@ -8,6 +8,8 @@
 #include "io/ioserver.h"
 #include "toolkit-common/text.h"
 
+#include "flat/texture.h"
+
 namespace ToolkitUtil
 {
 using namespace IO;
@@ -18,7 +20,6 @@ using namespace Util;
     Constructor 
 */
 TextureConversionJob::TextureConversionJob() :
-    textureAttrTable(0),
     logger(0),
     force(false),
     quiet(false),
@@ -38,7 +39,6 @@ TextureConversionJob::Convert()
     n_assert(this->dstPath.IsValid());
     n_assert(this->tmpDir.IsValid());    
     n_assert(this->dstFileExt.IsValid());
-    n_assert(0 != this->textureAttrTable);
     n_assert(0 != this->logger);
 
     // set dst file extension
@@ -65,8 +65,9 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // first make sure the target directory exists
     IoServer::Instance()->CreateDirectory(this->dstPath.ExtractDirName());
 
+    Util::String dstFile = Util::Format("%s/%s.%s", dstPath.AsCharPtr(), srcPath.ExtractFileName().AsCharPtr(), this->dstFileExt.AsCharPtr());
     // check if we can skip conversion based on the file time stamps and force flag
-    if (!this->NeedsConversion(srcPath, dstPath))
+    if (!this->NeedsConversion(srcPath, dstFile))
     {
         this->logger->Print("Skipping %s\n", Text(URI(srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr());
         return true;
@@ -74,9 +75,9 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
 
 
     // remove read-only attr from dst file 
-    if (ioServer->FileExists(dstPath))
+    if (ioServer->FileExists(dstFile))
     {
-        ioServer->SetReadOnly(dstPath, false);
+        ioServer->SetReadOnly(dstFile, false);
     }
 
     // setup the path of the temporary destination file
@@ -87,13 +88,10 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // make sure the temp directory exists
     IoServer::Instance()->CreateDirectory(this->tmpPath.ExtractDirName());
 
-    // get texture conversion attributes
-    this->textureAttrs = this->textureAttrTable->GetEntry(srcPath);
-    
     // if destination file is already in native format, do a plain copy
-    if (!neverCopy && srcPath.GetFileExtension() == dstPath.GetFileExtension())
+    if (!neverCopy && srcPath.GetFileExtension() == dstFile.GetFileExtension())
     {
-        ioServer->CopyFile(srcPath, dstPath);
+        ioServer->CopyFile(srcPath, dstFile);
         return true;
     }
     return false;
@@ -119,16 +117,11 @@ TextureConversionJob::NeedsConversion(const String& srcPath, const String& dstPa
     {
         FileTime srcFileTime = ioServer->GetFileWriteTime(srcPath);
         FileTime dstFileTime = ioServer->GetFileWriteTime(dstPath);
-        FileTime attrTime = srcFileTime;
         String texEntry;
         texEntry.Format("%s/%s", srcPath.ExtractLastDirName().AsCharPtr(), srcPath.ExtractFileName().AsCharPtr());
         texEntry.StripFileExtension();
         
-        if (this->textureAttrTable->HasEntry(texEntry))
-        {
-            attrTime = this->textureAttrTable->GetEntry(texEntry).GetTime();
-        }
-        if (dstFileTime > srcFileTime && dstFileTime > attrTime)
+        if (dstFileTime > srcFileTime)
         {
             // dst file newer then src file, don't need to convert
             return false;
@@ -164,5 +157,7 @@ TextureConversionJob::CopyResult()
     ioServer->DeleteDirectory(this->tmpDir);
     return retval;
 }
+
+
 
 } // namespace ToolkitUtil

@@ -58,10 +58,11 @@ RegisterModelEntity(
     Math::mat4 const& t
 )
 {
+    IO::URN modelURN("mdl", res.Value());
     Models::ModelContext::RegisterEntity(gid);
     Models::ModelContext::Setup(
         gid,
-        res,
+        modelURN,
         "NONE",
         [gid, anim, skeleton, raytracing, t]()
         {

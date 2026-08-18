@@ -8,10 +8,10 @@
     (C) 2015-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/base/assetprocessorbase.h"
 namespace ToolkitUtil
 {
-class SurfaceExporter : public Base::ExporterBase
+class SurfaceExporter : public Base::AssetProcessorBase
 {
     __DeclareClass(SurfaceExporter);
 public:
@@ -21,6 +21,6 @@ public:
     virtual ~SurfaceExporter();
 
     /// exports a single file
-    void ExportFile(const IO::URI& file);
+    void ProcessFile(const IO::URI& file);
 };
 } // namespace ToolkitUtil

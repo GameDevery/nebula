@@ -15,6 +15,13 @@
 #include "particles/particleresource.h"
 #include "dynui/imguicontext.h"
 
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/model.h"
+#include "flat/material.h"
+#include "flat/particle.h"
+
+
 namespace Presentation
 {
 
@@ -27,10 +34,7 @@ public:
     {
         None,
         Material,
-        Mesh,
-        Skeleton,
         Model,
-        Animation,
         Texture,
         Particle,
 
@@ -45,14 +49,16 @@ public:
     Modules::Viewport viewport;
 
     // Select material for previewing
-    void Open(const Resources::ResourceName& asset, const AssetType type);
+    void Open(const IO::URI& asset, const Util::String root, const AssetType type);
 };
 __RegisterClass(AssetEditor)
 
 struct ImageHolder
 {
     Resources::ResourceId res;
+    Ids::Id32 textureId;
     Dynui::ImguiTextureId texture;
+
 };
 
 struct AssetEditorItem
@@ -75,8 +81,10 @@ struct AssetEditorItem
 
         Resources::ResourceUnknownId id = Resources::InvalidResourceUnknownId;
     } asset;
+
     Resources::ResourceId res;
-    Resources::ResourceName name;
+    IO::URI source;
+    IO::URI path;
     Graphics::GraphicsEntityId previewObject;
 
 

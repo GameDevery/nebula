@@ -47,7 +47,7 @@ MeshBuilder::SetComponents(const MeshBuilderVertex::ComponentMask mask)
 /**
 */
 const MeshBuilderVertex::ComponentMask 
-MeshBuilder::GetComponents()
+MeshBuilder::GetComponents() const
 {
     return this->componentMask;
 }
@@ -65,7 +65,7 @@ MeshBuilder::SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code& p
 /**
 */
 const CoreGraphics::PrimitiveTopology::Code&
-MeshBuilder::GetPrimitiveTopology()
+MeshBuilder::GetPrimitiveTopology() const
 {
     return this->topology;
 }
@@ -83,7 +83,7 @@ MeshBuilder::SetPrimitiveGroups(const Util::Array<MeshBuilderGroup>& groups)
 /**
 */
 const Util::Array<MeshBuilderGroup>&
-MeshBuilder::GetPrimitiveGroups()
+MeshBuilder::GetPrimitiveGroups() const
 {
     return this->groups;
 }
@@ -154,6 +154,30 @@ MeshBuilder::ComputeBoundingBox() const
     {
         const MeshBuilderVertex& vtx = this->VertexAt(vertexIndex);
         box.extend(xyz(vtx.base.position));
+    }
+    box.end_extend();
+    return box;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bbox 
+MeshBuilder::ComputeGroupBoundingBox(const MeshBuilderGroup& group) const
+{
+    bbox box;
+    box.begin_extend();
+    SizeT numVertices = group.GetNumTriangles();
+    IndexT triangleIndex;
+    for (triangleIndex = group.GetFirstTriangleIndex(); triangleIndex < this->GetNumTriangles(); triangleIndex++)
+    {
+        const MeshBuilderTriangle& tri = this->TriangleAt(triangleIndex);
+        const MeshBuilderVertex& vtx0 = this->VertexAt(tri.GetVertexIndex(0));
+        const MeshBuilderVertex& vtx1 = this->VertexAt(tri.GetVertexIndex(1));
+        const MeshBuilderVertex& vtx2 = this->VertexAt(tri.GetVertexIndex(2));
+        box.extend(xyz(vtx0.base.position));
+        box.extend(xyz(vtx1.base.position));
+        box.extend(xyz(vtx2.base.position));
     }
     box.end_extend();
     return box;

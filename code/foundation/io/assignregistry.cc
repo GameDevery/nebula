@@ -6,8 +6,11 @@
 
 #include "io/assignregistry.h"
 #include "io/fswrapper.h"
+#include "io/ioserver.h"
 #include "core/coreserver.h"
 #include "system/nebulasettings.h"
+#include "db/sqlite3/sqlite3factory.h"
+#include "db/dataset.h"
 
 namespace IO
 {
@@ -49,6 +52,9 @@ AssignRegistry::Setup()
     this->isValid = true;
     this->SetupSystemAssigns();
     this->SetupProjectAssigns();
+
+    // Read the resource table and populate URN -> URI lookup map
+    IO::URI resTableUri("export:resource_mappings.sqlite");
     
     this->critSect.Leave();
 }
@@ -159,6 +165,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("audio", "export:audio"));    
     this->SetAssign(Assign("mat",   "export:materials"));
     this->SetAssign(Assign("sur",   "export:surfaces"));
+    this->SetAssign(Assign("mat",   "export:materials"));
     this->SetAssign(Assign("par",   "export:particles"));
     this->SetAssign(Assign("scr",   "data:scripts"));
     this->SetAssign(Assign("gui",   "data:gui"));
@@ -172,6 +179,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("systex",    "tex:system"));
     this->SetAssign(Assign("sysani",    "ani:system"));
     this->SetAssign(Assign("sysmdl",    "mdl:system"));
+    this->SetAssign(Assign("sysmat",    "mat:system"));
     this->SetAssign(Assign("syssur",    "sur:system"));
     this->SetAssign(Assign("sysphys",   "phys:system"));
 

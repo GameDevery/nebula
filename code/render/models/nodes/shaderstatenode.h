@@ -48,6 +48,10 @@ public:
     /// Create resource table
     static Util::FixedArray<CoreGraphics::ResourceTableId> CreateResourceTables();
 
+#if WITH_NEBULA_EDITOR
+    void SetMaterial(const IO::URN& res);
+#endif
+
 protected:
     friend class ModelContext;
     friend class ModelLoader;
@@ -61,7 +65,7 @@ protected:
     
     Resources::ResourceId materialRes;
     Materials::MaterialId material;
-    Resources::ResourceName materialName;
+    IO::URN materialName;
 
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 };

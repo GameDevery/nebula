@@ -1,0 +1,61 @@
+//------------------------------------------------------------------------------
+//
+//    Skeleton import type
+//
+//    (C) 2026 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace ToolkitUtil;
+
+enum TextureContainer : byte
+{
+	Unknown = 0,
+	JPG = 1,
+	TGA = 2,
+	BMP = 3,
+	DDS = 4,
+	PNG = 5,
+	EXR = 6,
+	TIF = 7,
+	CUBE = 8
+}
+
+enum TexturePixelFormat : byte
+{
+	R8G8B8A8 = 0,
+	R8G8B8 = 1,
+	R16 = 2,
+	BC1 = 3,
+	BC2 = 4,
+	BC3 = 5,
+	BC5 = 6,
+	BC6H = 7,
+	BC7 = 8
+}
+
+enum TextureColorSpace : byte
+{
+	Linear = 0,
+	sRGB = 1
+}
+
+enum TextureCompressionQuality : byte
+{
+	Low = 0,
+	High = 1
+}
+
+table TextureResource
+{
+	container : TextureContainer = Unknown;
+	target_format : TexturePixelFormat = R8G8B8A8;
+	color_space : TextureColorSpace = sRGB;
+	compression_quality : TextureCompressionQuality = High;
+	generate_mipmaps : bool = true;
+	invert_green : bool;
+	data : [ubyte];
+}
+
+root_type TextureResource;
+file_identifier "TEXT";
+file_extension "natex";

@@ -36,7 +36,6 @@
 #include "uritest.h"
 #include "mediatypetest.h"
 #include "varianttest.h"
-#include "iointerfacetest.h"
 #include "cmdlineargstest.h"
 #include "streamservertest.h"
 #include "luaservertest.h"
@@ -50,7 +49,6 @@
 #include "ringbuffertest.h"
 #include "excelxmlreadertest.h"
 #include "delegatetest.h"
-#include "delegatetabletest.h"
 #include "httpclienttest.h"
 #include "bxmlreadertest.h"
 #include "blobtest.h"
@@ -83,7 +81,6 @@ __cdecl main()
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
     testRunner->AttachTestCase(CVarTest::Create());    
     testRunner->AttachTestCase(HttpClientTest::Create());    
-    testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
     testRunner->AttachTestCase(BlobTest::Create());
     testRunner->AttachTestCase(BitFieldTest::Create());
@@ -125,7 +122,6 @@ __cdecl main()
     // testRunner->AttachTestCase(JSonReaderWriterTest::Create());
     testRunner->AttachTestCase(BinaryReaderWriterTest::Create());
     testRunner->AttachTestCase(VariantTest::Create());
-    testRunner->AttachTestCase(IOInterfaceTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
     testRunner->AttachTestCase(ArrayAllocatorTest::Create());
     testRunner->AttachTestCase(ProfilingTest::Create());

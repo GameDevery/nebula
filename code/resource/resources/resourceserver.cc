@@ -5,10 +5,14 @@
 #include "foundation/stdneb.h"
 #include "resourceserver.h"
 #include "profiling/profiling.h"
+#include "io/ioserver.h"
+#include "attr/attribute.h"
 
 #if NEBULA_DEBUG
 #include "core/sysfunc.h"
 #endif
+
+
 namespace Resources
 {
 
@@ -119,11 +123,16 @@ ResourceServer::DeregisterStreamLoader(const Util::StringAtom& ext, const Core::
     n_assert(this->typeMap.Contains(&loaderClass));
 
     IndexT loaderIdx = this->extensionMap[ext];
-    n_assert(this->typeMap[&loaderClass] == loaderIdx);
+    for (const auto& it : this->typeMap)
+    {
+        if (it.Value() == loaderIdx)
+        {
+            this->typeMap.Erase(it.Key());
+        }
+    }
     Ptr<ResourceLoader> loader = this->loaders[loaderIdx];
     this->loaders[loaderIdx] = nullptr;
     this->extensionMap.Erase(ext);
-    this->typeMap.Erase(&loaderClass);
     
     loader->ClearPendingUnloads();
     for (auto& kvp : loader->ids)

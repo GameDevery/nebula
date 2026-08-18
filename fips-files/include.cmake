@@ -55,6 +55,7 @@ if (N_SHADER_VALIDATION)
 endif()
 
 add_definitions(-DNEBULA_BINARY_FOLDER=\"${FIPS_PROJECT_DEPLOY_DIR}\")
+add_definitions(-DNEBULA_BUILD_FOLDER=\"${FIPS_PROJECT_BUILD_DIR}\")
 
 include(create_resource)
 include(CMakeDependentOption)
@@ -205,39 +206,47 @@ ENDIF (USE_DOTNET)
 
 macro(nebula_flatc root)
     string(COMPARE EQUAL ${root} "SYSTEM" use_system)
+	string(COMPARE EQUAL ${root} "LOCAL" use_relative)
     set_nebula_export_dir()
 
     if(${use_system})
-        set(rootdir ${NROOT}/syswork)
+        set(rootdir ${NROOT}/syswork/data/flatbuffer/)
+	elseif(${use_relative})
+		set(rootdir ${CurDir})
     else()
-        set(rootdir ${WORK_DIR}/work)
+        set(rootdir ${WORK_DIR}/work/data/flatbuffer/)
     endif()
 
+	fips_dir(${rootdir})
     foreach(fb ${ARGN})
         set(target_has_flatc 1)
-        set(datadir ${rootdir}/data/flatbuffer/)
         get_filename_component(filename ${fb} NAME)
         get_filename_component(foldername ${fb} DIRECTORY)
+		get_filename_component(absolutePath ${rootdir}${fb} ABSOLUTE)
         string(REPLACE ".fbs" ".h" out_header ${filename})
        
         set(abs_output_folder "${CMAKE_BINARY_DIR}/generated/flat/${foldername}")
-        set(fbs ${datadir}${fb})
+        set(fbs ${rootdir}${fb})
         set(output ${abs_output_folder}/${out_header})
         add_custom_command(OUTPUT ${output}
-                COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
-                COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${fbs}
-                MAIN_DEPENDENCY "${fbs}"
+                COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${rootdir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${absolutePath}"
+                COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${rootdir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${absolutePath}
+				# Activate below line to emit flatbuffers as python into the root/data/flatbuffers folder
+				#COMMAND ${FLATC} -p  --gen-mutable --include-prefix flat --keep-prefix --gen-onefile -I "${rootdir}" -I "${NROOT}/syswork/data/flatbuffer/" -o "${WORK_DIR}/data/flatbuffer/${foldername}/" ${absolutePath}
+                MAIN_DEPENDENCY "${absolutePath}"
                 DEPENDS ${FLATC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Compiling ${fb} flatbuffer"
                 VERBATIM
                 )
+
         target_sources(${CurTargetName} PRIVATE ${fbs})
         target_sources(${CurTargetName} PRIVATE ${output})
 
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${output}")
-        source_group("res\\flatbuffer" FILES ${fbs})
+        source_group("${CurGroup}\\Source" FILES ${fbs})
     endforeach()
+    fips_dir(.)
 endmacro()
 
 macro(compile_gpulang_intern)
@@ -252,7 +261,7 @@ macro(compile_gpulang_intern)
             set(base_path ${NROOT}/syswork/shaders/gpulang)
         else()
             set(foldername ${CurDir})
-            set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
+			set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
         endif()
 
         cmake_path(SET shd_path ${shd})
@@ -262,6 +271,8 @@ macro(compile_gpulang_intern)
 
         set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.gplb)
         set(headerOutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}.h)
+        cmake_path(NORMAL_PATH binaryOutput)
+		cmake_path(NORMAL_PATH headerOutput)
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
@@ -277,6 +288,11 @@ macro(compile_gpulang_intern)
             file(READ ${depoutput} deps)
         endif()
 
+        if (${foldername})
+		    cmake_path(NORMAL_PATH foldername)
+        endif()
+		cmake_path(NORMAL_PATH shd)
+		cmake_path(NORMAL_PATH GPULANGC)
         add_custom_command(OUTPUT ${binaryOutput}
             COMMAND ${GPULANGC} ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_compiler_args} -g 3
             MAIN_DEPENDENCY ${shd}

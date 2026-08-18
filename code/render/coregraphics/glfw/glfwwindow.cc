@@ -113,6 +113,20 @@ CharFunc(const CoreGraphics::WindowId& id, unsigned int key)
 /**
 */
 void
+DropFunc(const CoreGraphics::WindowId& id, int path_count, const char* paths[])
+{
+    Util::Array<Util::String> files(path_count, 0);
+    for (int i = 0; i < path_count; i++)
+    {
+        files.Append(Util::String(paths[i]));
+    }
+    GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::Drop, files));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mods)
 {
     DisplayEvent::Code act = action == GLFW_PRESS ? DisplayEvent::MouseButtonDown : DisplayEvent::MouseButtonUp;
@@ -154,6 +168,36 @@ MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos)
     vec2 pos;
     pos.set(((float)xpos) / float(mode.GetWidth()), (float)(ypos) / float(mode.GetHeight()));
     GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, id, absMousePos, pos));
+
+    const Util::Array<GLFWwindow*> windows = glfwWindowAllocator.GetArray<GLFW_Window>();
+    GLFWwindow* wnd = windows[id.id];
+    double cx, cy;
+    int wx, wy;
+    glfwGetCursorPos(wnd, &cx, &cy);
+    glfwGetWindowPos(wnd, &wx, &wy);
+    double sx = wx + cx;
+    double sy = wy + cy;
+
+    for (GLFWwindow* otherWindow : windows)
+    {
+        if (otherWindow != wnd)
+        {
+            int wx, wy, ww, wh;
+            glfwGetWindowPos(otherWindow, &wx, &wy);
+            glfwGetWindowSize(otherWindow, &ww, &wh);
+
+            if (sx >= wx && sx < wx + ww && sy >= wy && sy < wy + wh)
+            {
+                CoreGraphics::WindowId* otherId = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(otherWindow);
+                const CoreGraphics::DisplayMode& newMode = glfwWindowAllocator.Get<GLFW_DisplayMode>(otherId->id);
+                vec2 newAbsPos(sx - wx, sy - wy);
+                vec2 newPos;
+                newPos.set(((float)newAbsPos.x) / float(newMode.GetWidth()), (float)(newAbsPos.y) / float(newMode.GetHeight()));
+                GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, *otherId, newAbsPos, newPos));
+                break;
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -248,11 +292,12 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
     });
     glfwSetDropCallback(window, [](GLFWwindow* window, int path_count, const char* paths[])
     {
-
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        DropFunc(*id, path_count, paths);
     });
     glfwSetCursorEnterCallback(window, [](GLFWwindow* window, int entered)
     {
-      
+        int foo = 5;
     });
 }
 

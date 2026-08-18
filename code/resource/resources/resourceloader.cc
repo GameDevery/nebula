@@ -114,11 +114,15 @@ ResourceLoader::StreamResource(const ResourceLoadJob& job)
 //------------------------------------------------------------------------------
 /**
 */
-Resource::State
-ResourceLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
+ResourceLoader::ResourceInitOutput
+ResourceLoader::ReinitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     // Assume the loader doesn't support streaming, whereby all data is loaded on initialize
-    return Resource::Failed;
+    ResourceInitOutput ret;
+    ret.id = job.id.resource;
+    ret.loaderStreamData.data = nullptr;
+    ret.loaderStreamData.stream = stream;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -186,25 +190,20 @@ ResourceLoader::ClearPendingUnloads()
     for (IndexT i = this->pendingUnloads.Size() - 1; i >= 0; i--)
     {
         const _PendingResourceUnload& unload = this->pendingUnloads[i];
-        if (this->states[unload.resourceId.loaderInstanceId] == Resource::Loaded)
-        {
-            n_assert(this->usage[unload.resourceId.loaderInstanceId] >= 0);
-            this->usage[unload.resourceId.loaderInstanceId]--;
-            if (this->usage[unload.resourceId.loaderInstanceId] == 0)
-            {
-                // unload if loaded
-                this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
-                this->Unload(unload.resourceId);
 
-                Memory::Free(Memory::ScratchHeap, this->metaData[unload.resourceId.loaderInstanceId].data);
+        // unload if loaded
+        this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
+        this->Unload(unload.resourceId);
 
-                // give up the resource id
-                this->resourceInstanceIndexPool.Dealloc(unload.resourceId.loaderInstanceId);
-            }
+        this->streamDatas[unload.resourceId.loaderInstanceId] = {};
+        this->metaData[unload.resourceId.loaderInstanceId] = {};
+        Memory::Free(Memory::ScratchHeap, this->metaData[unload.resourceId.loaderInstanceId].data);
 
-            // remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
-            this->pendingUnloads.EraseIndex(i);
-        }
+        // give up the resource id
+        this->resourceInstanceIndexPool.Dealloc(unload.resourceId.loaderInstanceId);
+
+        // remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
+        this->pendingUnloads.EraseIndex(i);
     }
 }
 
@@ -360,7 +359,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
     streamResult.pendingBits = job.loadState.pendingBits;
     streamResult.loadedBits = job.loadState.loadedBits;
 
-    if (AllBits(job.flags, LoadFlags::Create))
+    if (AnyBits(job.flags, LoadFlags::Create | LoadFlags::Reload))
     {
         // construct stream
         Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(job.name.AsCharPtr());
@@ -368,7 +367,11 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         if (stream->Open())
         {
             // If new resource, initialize it
-            ResourceLoader::ResourceInitOutput initResult = loader->InitializeResource(job, stream);
+            ResourceLoader::ResourceInitOutput initResult;
+            if (AllBits(job.flags, LoadFlags::Create))
+                initResult = loader->InitializeResource(job, stream);
+            else if (AllBits(job.flags, LoadFlags::Reload))
+                initResult = loader->ReinitializeResource(job, stream);
             job.streamData = initResult.loaderStreamData;
             job.id.resourceId = initResult.id.resourceId;
             job.id.generation = initResult.id.generation;
@@ -450,13 +453,12 @@ skip_stream:
 /**
 */
 Resources::ResourceId
-Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream)
+Resources::ResourceLoader::CreateResource(const IO::URI& path, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream)
 {
     // this assert should maybe be removed in favor of putting things on a queue if called from another thread
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 
     // Store the file path as ID for the file
-    IO::URI path(res.Value());
     IndexT i = this->ids.FindIndex(path.GetHostAndLocalPath());
 
     // Setup return value as placeholder by default
@@ -504,6 +506,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             metaData.size = 0;
         }
         this->metaData[instanceId] = metaData;
+        this->streamDatas[instanceId] = {};
 
         ret.loaderInstanceId = instanceId;
         ret.loaderIndex = this->uniqueId;
@@ -638,14 +641,47 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
 //------------------------------------------------------------------------------
 /**
 */
+Resources::ResourceId
+ResourceLoader::CreateResource(
+    const IO::URN& res,
+    const void* loadInfo,
+    SizeT loadInfoSize,
+    const Util::StringAtom& tag,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed,
+    bool immediate,
+    bool stream)
+{
+    return CreateResource(res.MakeURI(this->loaderExtension), loadInfo, loadInfoSize, tag, success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
 {
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
     if (id != this->placeholderResourceId && id != this->failResourceId)
-    {
-        // add pending unload, it will be unloaded once loaded
-        this->pendingUnloads.Append({ id });
+    {        
+        if (this->states[id.loaderInstanceId] == Resource::Loaded)
+        {
+            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            this->usage[id.loaderInstanceId]--;
+            if (this->usage[id.loaderInstanceId] == 0)
+            {
+                // add pending unload, it will be unloaded once loaded
+                this->pendingUnloads.Append({ id });
+
+                if (this->streamDatas[id.loaderInstanceId].stream.isvalid())
+                {
+                    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
+                    this->streamDatas[id.loaderInstanceId].stream->Close();
+                }
+                
+                this->ids.Erase(this->names[id.loaderInstanceId]);
+            }
+        }
     }
 #if N_DEBUG
     else
@@ -667,8 +703,14 @@ ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
     {
         if (this->tags[i] == tag)
         {
-            // add pending unload, it will be unloaded once loaded
-            this->pendingUnloads.Append({ this->resources[this->ids[this->names[i]]] });
+            Resources::ResourceId id = this->resources[this->ids[this->names[i]]];
+            n_assert(this->usage[id.loaderInstanceId] >= 0);
+            this->usage[id.loaderInstanceId]--;
+            if (this->usage[id.loaderInstanceId] == 0)
+            {
+                // add pending unload, it will be unloaded once loaded
+                this->pendingUnloads.Append({ id });
+            }
             this->tags[i] = "";
         }
     }
@@ -712,7 +754,7 @@ void
 ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
-    IndexT i = this->ids.FindIndex(res);
+    IndexT i = this->ids.FindIndex(IO::URI(res.Value()).LocalPath());
     if (i != InvalidIndex)
     {
         // get id of resource
@@ -725,11 +767,12 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.immediate = false;
         pending.reload = true;
         pending.lod = 1.0f;
-        pending.flags = LoadFlags::Create;
+        pending.flags = LoadFlags::Reload;
 
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
         this->callbacks[ret.loaderInstanceId].Append({ success, failed });
+        this->pendingLoads.Append(ret.loaderInstanceId);
     }
     else
     {
@@ -758,6 +801,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
     this->loads[id.loaderInstanceId] = pending;
     this->states[id.loaderInstanceId] = Resource::Pending;
     this->callbacks[id.loaderInstanceId].Append({ success, failed });
+    this->pendingLoads.Append(id.loaderInstanceId);
 }
 
 //------------------------------------------------------------------------------
