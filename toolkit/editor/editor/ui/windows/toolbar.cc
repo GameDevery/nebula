@@ -55,10 +55,6 @@ Toolbar::Run(SaveMode save)
     if (ImGui::Button(ICON_ttf_PAUSE_CIRCLE)) { PauseGame(); }
     ImGui::SameLine();
     if (ImGui::Button(ICON_ttf_STOP_CIRCLE)) { StopGame(); }
-    ImGui::PopStyleColor();
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
-    ImGui::PopFont();
 }
 
 } // namespace Presentation

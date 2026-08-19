@@ -188,12 +188,12 @@ MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos)
 
             if (sx >= wx && sx < wx + ww && sy >= wy && sy < wy + wh)
             {
-                CoreGraphics::WindowId* otherId = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(otherWindow);
-                const CoreGraphics::DisplayMode& newMode = glfwWindowAllocator.Get<GLFW_DisplayMode>(otherId->id);
+                CoreGraphics::WindowId otherId = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(otherWindow));
+                const CoreGraphics::DisplayMode& newMode = glfwWindowAllocator.Get<GLFW_DisplayMode>(otherId.id);
                 vec2 newAbsPos(sx - wx, sy - wy);
                 vec2 newPos;
                 newPos.set(((float)newAbsPos.x) / float(newMode.GetWidth()), (float)(newAbsPos.y) / float(newMode.GetHeight()));
-                GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, *otherId, newAbsPos, newPos));
+                GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, otherId, newAbsPos, newPos));
                 break;
             }
         }
@@ -247,53 +247,53 @@ EnableCallbacks(const CoreGraphics::WindowId & id)
     GLFWwindow* window = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     glfwSetKeyCallback(window, [](GLFWwindow * window, int key, int scancode, int action, int mods)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        KeyFunc(*id, key, scancode, action, mods);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        KeyFunc(id, key, scancode, action, mods);
     });
     glfwSetMouseButtonCallback(window, [](GLFWwindow * window, int button, int action, int mods)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        MouseButtonFunc(*id, button, action, mods);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        MouseButtonFunc(id, button, action, mods);
     });
     glfwSetCursorPosCallback(window, [](GLFWwindow * window, double xpos, double ypos)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        MouseFunc(*id, xpos, ypos);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        MouseFunc(id, xpos, ypos);
     });
     glfwSetWindowCloseCallback(window, [](GLFWwindow * window)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        CloseFunc(*id);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        CloseFunc(id);
     });
     glfwSetWindowFocusCallback(window, [](GLFWwindow * window, int focus)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        FocusFunc(*id, focus);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        FocusFunc(id, focus);
     });
     glfwSetWindowSizeCallback(window, [](GLFWwindow * window, int width, int height)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        ResizeFunc(*id, width, height);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        ResizeFunc(id, width, height);
     });
     glfwSetWindowPosCallback(window, [](GLFWwindow* window, int x, int y)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        MoveFunc(*id, x, y);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        MoveFunc(id, x, y);
     });
     glfwSetScrollCallback(window, [](GLFWwindow * window, double xs, double ys)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        ScrollFunc(*id, xs, ys);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        ScrollFunc(id, xs, ys);
     });
     glfwSetCharCallback(window, [](GLFWwindow * window, unsigned int key)
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        CharFunc(*id, key);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        CharFunc(id, key);
     });
     glfwSetDropCallback(window, [](GLFWwindow* window, int path_count, const char* paths[])
     {
-        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-        DropFunc(*id, path_count, paths);
+        CoreGraphics::WindowId id = reinterpret_cast<uintptr_t>(glfwGetWindowUserPointer(window));
+        DropFunc(id, path_count, paths);
     });
     glfwSetCursorEnterCallback(window, [](GLFWwindow* window, int entered)
     {
@@ -364,10 +364,6 @@ InternalSetupFunction(const WindowCreateInfo& info)
         mode.SetContentScale(contentScale);
     }
 
-    // set user pointer to this window
-    WindowId* ptr = new WindowId;
-    *ptr = id;
-
     glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, GL_FALSE);
@@ -380,7 +376,7 @@ InternalSetupFunction(const WindowCreateInfo& info)
     else                    WindowApplyFullscreen(id, Adapter::Primary, true);
 
     // set user pointer to this window
-    glfwSetWindowUserPointer(wnd, ptr);
+    glfwSetWindowUserPointer(wnd, (void*)(uintptr_t)id.id);
     glfwSetWindowTitle(wnd, info.title.Value());
     if (info.icon.IsValid())
     {
@@ -483,7 +479,6 @@ DestroyWindow(const WindowId id)
 {
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     GLFW::DisableCallbacks(id);
-    delete (WindowId*)glfwGetWindowUserPointer(wnd);
     glfwDestroyWindow(wnd);
 
     CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
