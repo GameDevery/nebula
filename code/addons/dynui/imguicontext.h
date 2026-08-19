@@ -31,6 +31,8 @@ namespace Dynui
 
 extern ImGuiKey NebulaToImguiKeyCodes[];
 extern Util::Array<Util::String> ImguiDragAndDropFiles;
+extern const char* EditorUIPath;
+
 struct ImguiTextureId
 {
     CoreGraphics::TextureId nebulaHandle = 0;

@@ -44,7 +44,6 @@ namespace Editor
 __ImplementClass(Editor::UIManager, 'UiMa', Game::Manager);
 
 static Ptr<Presentation::WindowServer> windowServer;
-const char* UIManager::editorUIPath = "user:nebula/editor/editorui.ini";
 
 //------------------------------------------------------------------------------
 /**
@@ -207,7 +206,7 @@ UIManager::OnActivate()
 
         }
     });
-    IO::URI userEditorIni = IO::URI(editorUIPath);
+    IO::URI userEditorIni = IO::URI(Dynui::EditorUIPath);
     Util::String path = userEditorIni.LocalPath();
     if (!IO::IoServer::Instance()->FileExists(userEditorIni))
     {
@@ -259,7 +258,7 @@ UIManager::OnFrame()
     if (this->delayedImguiLoad)
     {
         this->delayedImguiLoad = false;
-        IO::URI userEditorIni = IO::URI(editorUIPath);
+        IO::URI userEditorIni = IO::URI(Dynui::EditorUIPath);
         Util::String path = userEditorIni.LocalPath();
         if (IO::IoServer::Instance()->FileExists(userEditorIni))
         {
@@ -267,14 +266,6 @@ UIManager::OnFrame()
         }
     }
     N_MARKER_END();
-}
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::String 
-UIManager::GetEditorUIIniPath()
-{
-    return editorUIPath;
 }
 
 } // namespace Editor

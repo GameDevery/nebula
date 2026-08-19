@@ -33,6 +33,7 @@ using namespace Input;
 namespace Dynui
 {
 Util::Array<Util::String> ImguiDragAndDropFiles;
+const char* EditorUIPath = "user:nebula/editor/editorui.ini";
 ImGuiKey NebulaToImguiKeyCodes[] =
 {
     ImGuiKey_Backspace,      // Code::Back
@@ -1118,6 +1119,14 @@ ImguiContext::Create()
 void
 ImguiContext::Discard()
 {
+    IO::URI userEditorIni = IO::URI(EditorUIPath);
+    Util::String path = userEditorIni.LocalPath();
+    IO::IoServer::Instance()->CreateDirectory("user:nebula/editor/");
+    if (IO::IoServer::Instance()->FileExists(userEditorIni))
+    {
+        ImGui::SaveIniSettingsToDisk(userEditorIni.LocalPath().AsCharPtr());
+    }
+
     IndexT i;
     for (i = 0; i < state.vbos.Size(); i++)
     {

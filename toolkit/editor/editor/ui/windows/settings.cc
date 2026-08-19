@@ -99,15 +99,7 @@ Settings::Run(SaveMode save)
     //    Im3d::Im3dContext::SetGizmoSize(gizmoSize, gizmoWidth);
     //}
     //ImGui::EndDisabled();
-    const IO::URI path(Editor::UIManager::GetEditorUIIniPath());
-    if (ImGui::Button("Save editor layout"))
-    { 
-        ImGui::SaveIniSettingsToDisk(path.LocalPath().c_str());
-    }
-    if (ImGui::Button("Load editor layout"))
-    {
-        ImGui::LoadIniSettingsFromDisk(path.LocalPath().c_str());
-    }
+    const IO::URI path(Dynui::EditorUIPath);
     if (ImGui::Button("Reset to default layout"))
     {
         const Util::String defaultIni = "tool:syswork/data/editor/defaultui.ini";

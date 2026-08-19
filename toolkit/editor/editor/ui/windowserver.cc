@@ -679,7 +679,7 @@ WindowServer::RunAll()
             }
             if (ImGui::MenuItem("Save Window Layout"))
             {
-                const IO::URI path(Editor::UIManager::GetEditorUIIniPath());
+                const IO::URI path(Dynui::EditorUIPath);
                 ImGui::SaveIniSettingsToDisk(path.LocalPath().c_str());
             }
 
