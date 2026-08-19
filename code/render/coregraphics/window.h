@@ -80,6 +80,10 @@ void WindowSetCursorVisible(const WindowId id, bool b);
 void WindowSetCursorLocked(const WindowId id, bool b);
 /// Focus window
 void WindowTakeFocus(const WindowId id);
+/// Set window mouse passthrough
+void WindowSetMousePassThrough(const WindowId id, bool passthrough);
+/// Get if window is hovered
+bool WindowIsHovered(const WindowId id);
 
 /// Get user data associated with window
 void* WindowGetUserData(const WindowId id);

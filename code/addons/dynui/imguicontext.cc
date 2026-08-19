@@ -1052,6 +1052,12 @@ ImguiContext::Create()
         ImGuiSecondaryWindowData* data = static_cast<ImGuiSecondaryWindowData*>(render_arg);
         ImguiDrawFunction(data->buf, data->viewport, vp->DrawData);
     };
+    platform_io.Platform_UpdateWindow = [](ImGuiViewport* vp) -> void
+    {
+        ImGuiWindowHandle* wndHandle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        const bool noInputs = (vp->Flags & ImGuiViewportFlags_NoInputs) != 0;
+        CoreGraphics::WindowSetMousePassThrough(wndHandle->wnd, noInputs);
+    };
 
     
 
@@ -1212,6 +1218,19 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 
     CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::MainWindow);
     io.DisplaySize = ImVec2((float)mode.GetWidth(), (float)mode.GetHeight());
+
+    ImGuiID hovered = 0;
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    for (int i = 0; i < platform_io.Viewports.Size; i++)
+    {
+        ImGuiViewport* vp = platform_io.Viewports[i];
+        auto* handle = static_cast<ImGuiWindowHandle*>(vp->PlatformHandle);
+        if (handle == nullptr)
+            continue;
+        if (CoreGraphics::WindowIsHovered(handle->wnd))
+            hovered = vp->ID;
+    }
+    io.AddMouseViewportEvent(hovered);
 
     io.DeltaTime = ctx.frameTime;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);

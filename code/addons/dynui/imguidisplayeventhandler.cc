@@ -88,16 +88,6 @@ ImguiDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
         {
             Math::int2 pos = CoreGraphics::WindowGetPosition(displayEvent.GetWindowId());
             io.AddMousePosEvent(displayEvent.GetAbsMousePos().x + pos.x, displayEvent.GetAbsMousePos().y + pos.y);
-
-            ImGuiID* id = static_cast<ImGuiID*>(CoreGraphics::WindowGetUserData(displayEvent.GetWindowId()));
-            if (id != nullptr)
-                io.AddMouseViewportEvent(*id);
-            else
-            {
-                ImGuiViewport* main_vp = ImGui::GetMainViewport();
-                io.AddMouseViewportEvent(main_vp->ID);
-
-            }
             return io.WantCaptureMouse;
         }
         case DisplayEvent::Drop:
